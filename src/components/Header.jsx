@@ -44,7 +44,11 @@ function Header() {
               type="button"
               key={item}
               className={language === item ? "active" : ""}
-              onClick={() => setLanguage(item)}
+              aria-label={item === "en" ? "Switch to English" : "Chuyển sang tiếng Việt"}
+              onClick={() => {
+                setLanguage(item);
+                setIsOpen(false);
+              }}
             >
               {item.toUpperCase()}
             </button>

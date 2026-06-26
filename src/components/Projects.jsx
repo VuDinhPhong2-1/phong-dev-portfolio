@@ -35,6 +35,7 @@ function Projects() {
               <div className="project-body">
                 <header>
                   <div>
+                    <div className="project-label">{project.label}</div>
                     <h3>{project.name}</h3>
                     <p>{project.role}</p>
                   </div>

@@ -1,6 +1,6 @@
 export const projects = [
   {
-    name: "MOS Excel Grading System",
+    name: "MOS Grading System",
     role: "Full-stack Developer",
     description:
       "A web-based system designed to support MOS Excel practice and grading. The system helps manage exams, students, projects, and grading workflow for MOS-style Excel tests.",

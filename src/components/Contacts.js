@@ -1,7 +1,27 @@
 import React, { useRef } from "react";
+import {
+  faEnvelope,
+  faLocationDot,
+  faPhone,
+  faShareNodes,
+} from "@fortawesome/free-solid-svg-icons";
+import { faFacebook, faGithub } from "@fortawesome/free-brands-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import CustomHook from "./CustomHook";
 import { localizedContent } from "../data/localizedContent";
 import { useLanguage } from "../context/LanguageContext";
+
+const getContactIcon = (title) => {
+  const normalizedTitle = title.toLowerCase();
+
+  if (normalizedTitle.includes("email")) return faEnvelope;
+  if (normalizedTitle.includes("phone") || normalizedTitle.includes("điện")) return faPhone;
+  if (normalizedTitle.includes("address") || normalizedTitle.includes("địa")) return faLocationDot;
+  if (normalizedTitle.includes("github")) return faGithub;
+  if (normalizedTitle.includes("facebook")) return faFacebook;
+
+  return faShareNodes;
+};
 
 function Contacts() {
   const { language } = useLanguage();
@@ -19,7 +39,7 @@ function Contacts() {
       </div>
 
       <div className="contact-grid">
-        <div className="contact-card animation" ref={(el) => el && animatedRefs.current.push(el)}>
+        <div className="contact-card contact-card-main animation" ref={(el) => el && animatedRefs.current.push(el)}>
           <h3>{profile.name}</h3>
           <p>{profile.role}</p>
           <div className="project-actions">
@@ -49,14 +69,23 @@ function Contacts() {
               key={item.title}
               ref={(el) => el && animatedRefs.current.push(el)}
             >
-              <strong>{item.title}</strong>
-              {item.href ? (
-                <a href={item.href} target={item.href.startsWith("http") ? "_blank" : undefined} rel="noopener noreferrer">
-                  {item.value}
-                </a>
-              ) : (
-                <span>{item.value}</span>
-              )}
+              <div className="contact-icon">
+                <FontAwesomeIcon icon={getContactIcon(item.title)} />
+              </div>
+              <div>
+                <strong>{item.title}</strong>
+                {item.href ? (
+                  <a
+                    href={item.href}
+                    target={item.href.startsWith("http") ? "_blank" : undefined}
+                    rel="noopener noreferrer"
+                  >
+                    {item.value}
+                  </a>
+                ) : (
+                  <span>{item.value}</span>
+                )}
+              </div>
             </article>
           ))}
         </div>

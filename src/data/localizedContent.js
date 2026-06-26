@@ -35,11 +35,113 @@ const projectSources = {
   ],
 };
 
+const englishProjects = [
+  {
+    name: "MOS Grading System",
+    role: "Full-stack Developer",
+    label: "Featured education project",
+    description:
+      "A web-based system designed to support MOS Excel practice and grading. The system helps manage exams, students, projects, and grading workflow for MOS-style Excel tests.",
+    image: projectImages.mos,
+    badges: ["Education", "MOS", "Excel", "Grading System", "Full-stack"],
+    features: [
+      "Manage MOS exam sessions.",
+      "Support student exam workflow.",
+      "Handle Excel grading logic.",
+      "Backend API for exam, student, and grading management.",
+      "Frontend interface for users to interact with the system.",
+      "Suitable for education, training centers, and MOS practice environments.",
+    ],
+    technologies: {
+      frontend: "ReactJS, TypeScript",
+      backend: "ASP.NET Core / .NET, MongoDB",
+      tools: "GitHub, Postman, Swagger",
+    },
+    sources: projectSources.mos.map((source) => ({ ...source, label: source.label.en })),
+  },
+  {
+    name: "XGear eCommerce Website Clone",
+    role: "Full-stack Developer",
+    label: "Commercial workflow project",
+    description:
+      "Developed a full-stack e-commerce website clone of XGear, including product management, cart, checkout, authentication, role-based access control, payment integration, and admin features.",
+    image: projectImages.xgear,
+    badges: ["E-commerce", "Full-stack", "Payments", "Admin", "Authentication"],
+    features: [
+      "Product management",
+      "Cart and checkout",
+      "User authentication",
+      "Role-based access control",
+      "Payment integration",
+      "Image upload with Cloudinary",
+      "API documentation with Swagger",
+    ],
+    technologies: {
+      frontend: "ReactJS, MUI, Styled-Components, Redux, React Router",
+      backend:
+        "NestJS, TypeScript, JWT, Google OAuth, SQL Server, TypeORM, Redis, Bull Queue, Nodemailer, Cloudinary, Stripe, Momo",
+      tools: "Docker, Git, Postman, Swagger",
+    },
+    sources: projectSources.xgear.map((source) => ({ ...source, label: source.label.en })),
+  },
+];
+
+const vietnameseProjects = [
+  {
+    name: "MOS Grading System",
+    role: "Lập trình viên Full-stack",
+    label: "Dự án giáo dục nổi bật",
+    description:
+      "Hệ thống web hỗ trợ luyện tập và chấm điểm MOS Excel. Hệ thống giúp quản lý ca thi, học sinh, bài dự án và quy trình chấm điểm cho các bài thi Excel theo phong cách MOS.",
+    image: projectImages.mos,
+    badges: ["Giáo dục", "MOS", "Excel", "Hệ thống chấm điểm", "Full-stack"],
+    features: [
+      "Quản lý các ca thi MOS.",
+      "Hỗ trợ quy trình làm bài của học sinh.",
+      "Xử lý logic chấm điểm Excel.",
+      "Backend API cho quản lý bài thi, học sinh và chấm điểm.",
+      "Giao diện frontend để người dùng thao tác với hệ thống.",
+      "Phù hợp cho giáo dục, trung tâm đào tạo và môi trường luyện thi MOS.",
+    ],
+    technologies: {
+      frontend: "ReactJS, TypeScript",
+      backend: "ASP.NET Core / .NET, MongoDB",
+      tools: "GitHub, Postman, Swagger",
+    },
+    sources: projectSources.mos.map((source) => ({ ...source, label: source.label.vi })),
+  },
+  {
+    name: "XGear eCommerce Website Clone",
+    role: "Lập trình viên Full-stack",
+    label: "Dự án quy trình thương mại",
+    description:
+      "Phát triển website thương mại điện tử clone XGear với quản lý sản phẩm, giỏ hàng, thanh toán, xác thực, phân quyền, tích hợp thanh toán và tính năng quản trị.",
+    image: projectImages.xgear,
+    badges: ["Thương mại điện tử", "Full-stack", "Thanh toán", "Admin", "Xác thực"],
+    features: [
+      "Quản lý sản phẩm",
+      "Giỏ hàng và thanh toán",
+      "Xác thực người dùng",
+      "Phân quyền truy cập",
+      "Tích hợp thanh toán",
+      "Upload ảnh với Cloudinary",
+      "Tài liệu API bằng Swagger",
+    ],
+    technologies: {
+      frontend: "ReactJS, MUI, Styled-Components, Redux, React Router",
+      backend:
+        "NestJS, TypeScript, JWT, Google OAuth, SQL Server, TypeORM, Redis, Bull Queue, Nodemailer, Cloudinary, Stripe, Momo",
+      tools: "Docker, Git, Postman, Swagger",
+    },
+    sources: projectSources.xgear.map((source) => ({ ...source, label: source.label.vi })),
+  },
+];
+
 export const localizedContent = {
   en: {
     nav: [
       { key: "hero", label: "Hero" },
-      { key: "about", label: "About Me" },
+      { key: "about", label: "About" },
       { key: "experience", label: "Experience" },
       { key: "projects", label: "Projects" },
       { key: "skills", label: "Skills" },
@@ -60,17 +162,20 @@ export const localizedContent = {
       backend: "Backend",
       tools: "Tools",
       githubProfile: "GitHub Profile",
+      contactChannels: "Contact channels",
+      heroProofLabel: "MOS 2019",
+      heroProofText: "Teaching + Full-stack development + Education technology",
     },
     profile: {
       ...commonLinks,
       name: "Vu Dinh Phong",
       role: "Coding Online Teacher | MOS 2019 Instructor | Full-stack Web Developer",
       summary:
-        "I am a software engineering graduate with experience in full-stack web development and teaching MOS 2019. I have worked with TypeScript, GraphQL, PostgreSQL, ReactJS, NestJS, and NodeJS. My current goal is to combine programming knowledge and teaching experience to help students learn coding and office technology more effectively.",
+        "I combine teaching experience with full-stack web development to help students learn coding and office technology more effectively. My background includes MOS 2019 instruction, TypeScript, GraphQL, PostgreSQL, ReactJS, NestJS, and NodeJS.",
       heroEyebrow: "Coding Online Teacher Portfolio",
       about: [
         "I graduated from Ho Chi Minh City University of Technology - HUTECH, majoring in Software Engineering.",
-        "I have experience in backend and full-stack development, working with technologies such as TypeScript, GraphQL, PostgreSQL, NestJS, ExpressJS, ReactJS, and MongoDB.",
+        "I have experience in backend and full-stack development, working with TypeScript, GraphQL, PostgreSQL, NestJS, ExpressJS, ReactJS, and MongoDB.",
         "Besides software development, I also have 1 year of teaching experience at Tin Hoc Dai Duong, where I teach MOS 2019 to high school students.",
         "I am interested in online teaching, coding education, and building practical learning systems for students.",
       ],
@@ -100,7 +205,7 @@ export const localizedContent = {
       ],
       personalFacts: [
         { label: "Location", value: "Ho Chi Minh City, Vietnam" },
-        { label: "Address", value: "16 Yen The, Tan Son Hoa, Tp.HCM" },
+        { label: "Teaching", value: "MOS 2019, Word, Excel, PowerPoint" },
         { label: "Phone", value: "0559548503" },
         { label: "Email", value: "vudinhphong.26.12.2001@gmail.com" },
       ],
@@ -110,32 +215,32 @@ export const localizedContent = {
         eyebrow: "About Me",
         title: "Teaching mindset, developer foundation.",
         description:
-          "This portfolio is built to show both sides of the work: classroom support and full-stack implementation.",
+          "This portfolio shows both sides of the work: student support in class and full-stack implementation in real projects.",
         focusTitle: "What I bring",
       },
       experience: {
         eyebrow: "Experience",
         title: "Teaching, software delivery, and backend practice.",
         description:
-          "The experience section now highlights classroom work first, followed by commercial development roles and internship background.",
+          "Classroom experience comes first, followed by commercial development and backend internship work.",
       },
       projects: {
         eyebrow: "Projects",
         title: "Full-stack systems with practical learning value.",
         description:
-          "MOS Excel Grading System is placed first because it best represents the blend of education, student support, and real implementation work.",
+          "MOS Grading System is highlighted first because it best connects education, student support, and real implementation work.",
       },
       skills: {
         eyebrow: "Skills",
         title: "Organized around teaching, frontend, backend, and delivery.",
         description:
-          "Skills are grouped for easier scanning by recruiters looking for online teaching, education technology, and full-stack capability.",
+          "Skills are grouped for recruiters looking for online teaching, education technology, and full-stack capability.",
       },
       education: {
         eyebrow: "Education",
         title: "Academic base and current direction.",
         description:
-          "The portfolio now emphasizes education-focused work without losing the full-stack engineering background behind it.",
+          "The portfolio emphasizes education-focused work while keeping the full-stack engineering background clear.",
       },
       contact: {
         eyebrow: "Contact",
@@ -194,54 +299,7 @@ export const localizedContent = {
         ],
       },
     ],
-    projects: [
-      {
-        name: "MOS Excel Grading System",
-        role: "Full-stack Developer",
-        description:
-          "A web-based system designed to support MOS Excel practice and grading. The system helps manage exams, students, projects, and grading workflow for MOS-style Excel tests.",
-        image: projectImages.mos,
-        badges: ["Education", "MOS", "Excel", "Grading System", "Full-stack"],
-        features: [
-          "Manage MOS exam sessions.",
-          "Support student exam workflow.",
-          "Handle Excel grading logic.",
-          "Backend API for exam, student, and grading management.",
-          "Frontend interface for users to interact with the system.",
-          "Suitable for education, training centers, and MOS practice environments.",
-        ],
-        technologies: {
-          frontend: "ReactJS, TypeScript",
-          backend: "ASP.NET Core / .NET, MongoDB",
-          tools: "GitHub, Postman, Swagger",
-        },
-        sources: projectSources.mos.map((source) => ({ ...source, label: source.label.en })),
-      },
-      {
-        name: "XGear eCommerce Website Clone",
-        role: "Full-stack Developer",
-        description:
-          "Developed a full-stack e-commerce website clone of XGear, including product management, cart, checkout, authentication, role-based access control, payment integration, and admin features.",
-        image: projectImages.xgear,
-        badges: ["E-commerce", "Full-stack", "Payments", "Admin", "Authentication"],
-        features: [
-          "Product management",
-          "Cart and checkout",
-          "User authentication",
-          "Role-based access control",
-          "Payment integration",
-          "Image upload with Cloudinary",
-          "API documentation with Swagger",
-        ],
-        technologies: {
-          frontend: "ReactJS, MUI, Styled-Components, Redux, React Router",
-          backend:
-            "NestJS, TypeScript, JWT, Google OAuth, SQL Server, TypeORM, Redis, Bull Queue, Nodemailer, Cloudinary, Stripe, Momo",
-          tools: "Docker, Git, Postman, Swagger",
-        },
-        sources: projectSources.xgear.map((source) => ({ ...source, label: source.label.en })),
-      },
-    ],
+    projects: englishProjects,
     skillGroups: [
       {
         title: "Teaching & Education",
@@ -341,13 +399,16 @@ export const localizedContent = {
       backend: "Backend",
       tools: "Công cụ",
       githubProfile: "GitHub cá nhân",
+      contactChannels: "Kênh liên hệ",
+      heroProofLabel: "MOS 2019",
+      heroProofText: "Giảng dạy + Phát triển full-stack + Công nghệ giáo dục",
     },
     profile: {
       ...commonLinks,
       name: "Vu Dinh Phong",
       role: "Giáo viên Coding Online | Giảng viên MOS 2019 | Lập trình viên Full-stack",
       summary:
-        "Tôi tốt nghiệp ngành Kỹ thuật phần mềm, có kinh nghiệm phát triển web full-stack và giảng dạy MOS 2019. Tôi từng làm việc với TypeScript, GraphQL, PostgreSQL, ReactJS, NestJS và NodeJS. Mục tiêu hiện tại của tôi là kết hợp kiến thức lập trình với kinh nghiệm giảng dạy để giúp học sinh học coding và công nghệ văn phòng hiệu quả hơn.",
+        "Tôi kết hợp kinh nghiệm giảng dạy với nền tảng phát triển web full-stack để giúp học sinh học coding và công nghệ văn phòng hiệu quả hơn. Tôi có kinh nghiệm giảng dạy MOS 2019, TypeScript, GraphQL, PostgreSQL, ReactJS, NestJS và NodeJS.",
       heroEyebrow: "Portfolio giáo viên coding online",
       about: [
         "Tôi tốt nghiệp Trường Đại học Công nghệ TP.HCM - HUTECH, chuyên ngành Kỹ thuật phần mềm.",
@@ -381,7 +442,7 @@ export const localizedContent = {
       ],
       personalFacts: [
         { label: "Khu vực", value: "TP.HCM, Việt Nam" },
-        { label: "Địa chỉ", value: "16 Yên Thế, Tân Sơn Hòa, Tp.HCM" },
+        { label: "Giảng dạy", value: "MOS 2019, Word, Excel, PowerPoint" },
         { label: "Điện thoại", value: "0559548503" },
         { label: "Email", value: "vudinhphong.26.12.2001@gmail.com" },
       ],
@@ -391,20 +452,20 @@ export const localizedContent = {
         eyebrow: "Giới thiệu",
         title: "Tư duy giảng dạy, nền tảng lập trình.",
         description:
-          "Portfolio này thể hiện cả hai thế mạnh: hỗ trợ học sinh trong lớp học và năng lực triển khai full-stack.",
+          "Portfolio này thể hiện cả hai thế mạnh: hỗ trợ học sinh trong lớp học và năng lực triển khai full-stack qua dự án thực tế.",
         focusTitle: "Điểm mạnh của tôi",
       },
       experience: {
         eyebrow: "Kinh nghiệm",
         title: "Giảng dạy, phát triển phần mềm và thực hành backend.",
         description:
-          "Kinh nghiệm được ưu tiên theo hướng giảng dạy trước, sau đó là công việc phát triển phần mềm thực tế và thực tập backend.",
+          "Kinh nghiệm giảng dạy được đặt trước, tiếp theo là công việc phát triển phần mềm thực tế và thực tập backend.",
       },
       projects: {
         eyebrow: "Dự án",
         title: "Hệ thống full-stack có giá trị học tập thực tế.",
         description:
-          "MOS Excel Grading System được đặt đầu tiên vì thể hiện rõ sự kết hợp giữa giáo dục, hỗ trợ học sinh và năng lực triển khai sản phẩm.",
+          "MOS Grading System được làm nổi bật vì thể hiện rõ sự kết hợp giữa giáo dục, hỗ trợ học sinh và năng lực triển khai sản phẩm.",
       },
       skills: {
         eyebrow: "Kỹ năng",
@@ -475,54 +536,7 @@ export const localizedContent = {
         ],
       },
     ],
-    projects: [
-      {
-        name: "MOS Excel Grading System",
-        role: "Full-stack Developer",
-        description:
-          "Hệ thống web hỗ trợ luyện tập và chấm điểm MOS Excel. Hệ thống giúp quản lý ca thi, học sinh, bài dự án và quy trình chấm điểm cho các bài thi Excel theo phong cách MOS.",
-        image: projectImages.mos,
-        badges: ["Giáo dục", "MOS", "Excel", "Hệ thống chấm điểm", "Full-stack"],
-        features: [
-          "Quản lý các ca thi MOS.",
-          "Hỗ trợ quy trình làm bài của học sinh.",
-          "Xử lý logic chấm điểm Excel.",
-          "Backend API cho quản lý bài thi, học sinh và chấm điểm.",
-          "Giao diện frontend để người dùng thao tác với hệ thống.",
-          "Phù hợp cho giáo dục, trung tâm đào tạo và môi trường luyện thi MOS.",
-        ],
-        technologies: {
-          frontend: "ReactJS, TypeScript",
-          backend: "ASP.NET Core / .NET, MongoDB",
-          tools: "GitHub, Postman, Swagger",
-        },
-        sources: projectSources.mos.map((source) => ({ ...source, label: source.label.vi })),
-      },
-      {
-        name: "XGear eCommerce Website Clone",
-        role: "Full-stack Developer",
-        description:
-          "Phát triển website thương mại điện tử clone XGear với quản lý sản phẩm, giỏ hàng, thanh toán, xác thực, phân quyền, tích hợp thanh toán và tính năng quản trị.",
-        image: projectImages.xgear,
-        badges: ["Thương mại điện tử", "Full-stack", "Thanh toán", "Admin", "Xác thực"],
-        features: [
-          "Quản lý sản phẩm",
-          "Giỏ hàng và thanh toán",
-          "Xác thực người dùng",
-          "Phân quyền truy cập",
-          "Tích hợp thanh toán",
-          "Upload ảnh với Cloudinary",
-          "Tài liệu API bằng Swagger",
-        ],
-        technologies: {
-          frontend: "ReactJS, MUI, Styled-Components, Redux, React Router",
-          backend:
-            "NestJS, TypeScript, JWT, Google OAuth, SQL Server, TypeORM, Redis, Bull Queue, Nodemailer, Cloudinary, Stripe, Momo",
-          tools: "Docker, Git, Postman, Swagger",
-        },
-        sources: projectSources.xgear.map((source) => ({ ...source, label: source.label.vi })),
-      },
-    ],
+    projects: vietnameseProjects,
     skillGroups: [
       {
         title: "Giảng dạy & Giáo dục",

@@ -37,6 +37,10 @@ function Home() {
         <p className="hero-summary animation" ref={(el) => el && animatedRefs.current.push(el)}>
           {profile.summary}
         </p>
+        <div className="hero-proof animation" ref={(el) => el && animatedRefs.current.push(el)}>
+          <strong>{ui.heroProofLabel}</strong>
+          <span>{ui.heroProofText}</span>
+        </div>
         <div className="hero-actions animation" ref={(el) => el && animatedRefs.current.push(el)}>
           <button type="button" className="button-primary" onClick={() => jumpTo("projects")}>
             <FontAwesomeIcon icon={faArrowRight} />
@@ -66,6 +70,10 @@ function Home() {
       <aside className="hero-card animation" ref={(el) => el && animatedRefs.current.push(el)}>
         <div className="portrait">
           <img src={profile.avatar} alt={profile.name} />
+        </div>
+        <div className="hero-card-caption">
+          <strong>{profile.role}</strong>
+          <span>{profile.heroHighlights.slice(0, 3).join(" / ")}</span>
         </div>
         <footer>
           {profile.personalFacts.map((fact) => (
