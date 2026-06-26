@@ -1,0 +1,50 @@
+export const experiences = [
+  {
+    company: "Tin Hoc Dai Duong",
+    position: "MOS 2019 Instructor",
+    period: "2025 - 2026",
+    technologies: [
+      "MOS 2019",
+      "Microsoft Word",
+      "Microsoft Excel",
+      "Microsoft PowerPoint",
+      "Student Support",
+      "Online Teaching",
+    ],
+    description: [
+      "Taught MOS 2019 to high school students.",
+      "Guided students in Microsoft Word, Excel, and PowerPoint exam skills.",
+      "Supported students in practicing MOS exercises and improving test performance.",
+      "Explained office software concepts in a simple and easy-to-understand way.",
+      "Built teaching experience suitable for online coding and technology education.",
+    ],
+  },
+  {
+    company: "HDWEBSOFT",
+    position: "Software Developer",
+    period: "2024 - 2025",
+    website: "https://www.hdwebsoft.com/vn",
+    technologies: ["TypeScript", "GraphQL", "PostgreSQL"],
+    description: [
+      "Worked on software development tasks using TypeScript.",
+      "Developed and maintained features with GraphQL APIs.",
+      "Worked with PostgreSQL database.",
+      "Participated in real-world software development workflow.",
+      "Improved coding, debugging, teamwork, and project communication skills.",
+    ],
+  },
+  {
+    company: "GPT GROUP",
+    position: "Backend Intern",
+    period: "03/2024 - 10/2024",
+    technologies: ["NodeJS", "ExpressJS", "MongoDB", "RESTful API", "Postman", "Swagger"],
+    description: [
+      "Learned and used NodeJS, ExpressJS, MongoDB, and RESTful API.",
+      "Designed and developed backend APIs.",
+      "Tested APIs using Postman.",
+      "Documented APIs using Swagger.",
+      "Collaborated with frontend team to build APIs based on system requirements.",
+      "Presented API demos to leader and received feedback for improvement.",
+    ],
+  },
+];

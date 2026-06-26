@@ -1,42 +1,68 @@
-import React, { useState, useRef } from "react";
+import React, { useRef } from "react";
 import CustomHook from "./CustomHook";
+import { localizedContent } from "../data/localizedContent";
+import { useLanguage } from "../context/LanguageContext";
 
 function Contacts() {
-  const [listContacts] = useState([
-    {
-      title: "Phone Number",
-      value: "0559548503",
-    },
-    {
-      title: "Email",
-      value: "vudinhphong.26.12.2001@gmail.com",
-    },
-    {
-      title: "Instagram",
-      value: "@_11P0n9_",
-    },
-  ]);
-  const divs = useRef([]);
+  const { language } = useLanguage();
+  const { contactItems, profile, sections, ui } = localizedContent[language];
   const scrollTab = useRef();
-  CustomHook(scrollTab, divs);
+  const animatedRefs = useRef([]);
+  CustomHook(scrollTab, animatedRefs);
+
   return (
-    <section className="contacts" ref={scrollTab}>
-      <div className="title" ref={(el) => el && divs.current.push(el)}>
-        This is my Contacts
+    <section ref={scrollTab} data-name="contact">
+      <div className="section-heading animation" ref={(el) => el && animatedRefs.current.push(el)}>
+        <div className="eyebrow">{sections.contact.eyebrow}</div>
+        <h2>{sections.contact.title}</h2>
+        <p>{sections.contact.description}</p>
       </div>
-      <div className="des" ref={(el) => el && divs.current.push(el)}>
-        If you need to contact me, please use the information below. I’m always
-        ready to respond to messages and provide support when needed!
-      </div>
-      <div className="list" ref={(el) => el && divs.current.push(el)}>
-        {listContacts.map((value, key) => (
-          <div className="item" key={key}>
-            <h3>{value.title}</h3>
-            <div>{value.value}</div>
+
+      <div className="contact-grid">
+        <div className="contact-card animation" ref={(el) => el && animatedRefs.current.push(el)}>
+          <h3>{profile.name}</h3>
+          <p>{profile.role}</p>
+          <div className="project-actions">
+            <a
+              className="button-primary"
+              href={profile.cvLink}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              {ui.downloadCv}
+            </a>
+            <a
+              className="button-secondary"
+              href={profile.github}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              {ui.githubProfile}
+            </a>
           </div>
-        ))}
+        </div>
+
+        <div className="contact-list">
+          {contactItems.map((item) => (
+            <article
+              className="contact-card animation"
+              key={item.title}
+              ref={(el) => el && animatedRefs.current.push(el)}
+            >
+              <strong>{item.title}</strong>
+              {item.href ? (
+                <a href={item.href} target={item.href.startsWith("http") ? "_blank" : undefined} rel="noopener noreferrer">
+                  {item.value}
+                </a>
+              ) : (
+                <span>{item.value}</span>
+              )}
+            </article>
+          ))}
+        </div>
       </div>
     </section>
   );
 }
+
 export default Contacts;

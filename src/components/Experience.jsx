@@ -1,70 +1,83 @@
 import React, { useRef } from "react";
+import { faBriefcase, faCodeBranch, faGlobe } from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import CustomHook from "./CustomHook";
+import { localizedContent } from "../data/localizedContent";
+import { useLanguage } from "../context/LanguageContext";
 
-const experiences = [
-  {
-    company: "GPT GROUP",
-    startDate: "03/04",
-    endDate: "03/10",
-    position: "Backend Developer Intern",
-    technologies: [
-      "Express",
-      "Mongoose",
-      "Cloudinary",
-      "Twilio (OTP)",
-      "Swagger",
-      "Mailer",
-    ],
-    description: [
-      "Designed and developed an order management system similar to J&T Express.",
-      "Implemented user authentication via OTP to verify phone numbers for account updates.",
-      "Integrated Cloudinary for storing and managing order images.",
-      "Developed order processing APIs, including creating orders, updating statuses, assigning delivery personnel, and handling order pickups.",
-      "Tracked order status and calculated shipping fees between provinces/districts.",
-      "Documented APIs on Swagger to facilitate frontend integration.",
-      "Optimized database queries and enhanced system security.",
-    ],
-  },
-];
-
-const Experience = () => {
+function Experience() {
+  const { language } = useLanguage();
+  const { experiences, sections, ui } = localizedContent[language];
   const scrollTab = useRef();
-  const divs = useRef([]);
-  CustomHook(scrollTab, divs);
+  const animatedRefs = useRef([]);
+  CustomHook(scrollTab, animatedRefs);
+
   return (
-    <section className="experience" ref={scrollTab}>
-      <div className="title" ref={(el) => el && divs.current.push(el)}>
-        Work Experience
+    <section ref={scrollTab} data-name="experience">
+      <div className="section-heading animation" ref={(el) => el && animatedRefs.current.push(el)}>
+        <div className="eyebrow">{sections.experience.eyebrow}</div>
+        <h2>{sections.experience.title}</h2>
+        <p>{sections.experience.description}</p>
       </div>
-      {experiences.map((exp, index) => (
-        <div
-          className="experience-item"
-          key={index}
-          ref={(el) => el && divs.current.push(el)}
-        >
-          <h2>{exp.company}</h2>
-          <p>
-            <strong>Start date:</strong> {exp.startDate} |{" "}
-            <strong>End date:</strong> {exp.endDate}
-          </p>
-          <p>
-            <strong>Position:</strong> {exp.position}
-          </p>
-          <p>
-            <strong>Technologies:</strong> {exp.technologies.join(", ")}
-          </p>
-          <div>
-            <strong>Job Description:</strong>
-            <ul>
-              {exp.description.map((desc, i) => (
-                <li key={i}>{desc}</li>
-              ))}
-            </ul>
-          </div>
-        </div>
-      ))}
+
+      <div className="timeline">
+        {experiences.map((exp) => (
+          <article
+            className="experience-card animation"
+            key={`${exp.company}-${exp.period}`}
+            ref={(el) => el && animatedRefs.current.push(el)}
+          >
+            <header>
+              <div>
+                <div className="experience-company">{exp.company}</div>
+                <h3>{exp.position}</h3>
+                <p>{exp.period}</p>
+              </div>
+              {exp.website ? (
+                <a
+                  className="button-secondary"
+                  href={exp.website}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  <FontAwesomeIcon icon={faGlobe} />
+                  {ui.companyWebsite}
+                </a>
+              ) : null}
+            </header>
+
+            <div className="experience-details">
+              <div className="experience-meta">
+                <div className="icon-wrap">
+                  <FontAwesomeIcon icon={faBriefcase} />
+                </div>
+                <div>
+                  <strong>{ui.roleFocus}</strong>
+                  <p>{exp.position}</p>
+                </div>
+              </div>
+
+              <div className="experience-meta">
+                <div className="icon-wrap">
+                  <FontAwesomeIcon icon={faCodeBranch} />
+                </div>
+                <div>
+                  <strong>{ui.technologies}</strong>
+                  <p>{exp.technologies.join(", ")}</p>
+                </div>
+              </div>
+
+              <ul className="bullet-list">
+                {exp.description.map((item) => (
+                  <li key={item}>{item}</li>
+                ))}
+              </ul>
+            </div>
+          </article>
+        ))}
+      </div>
     </section>
   );
-};
+}
 
 export default Experience;

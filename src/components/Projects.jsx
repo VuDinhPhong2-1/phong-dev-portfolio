@@ -1,149 +1,115 @@
-import {
-  faEarthAmericas,
-  faPersonCircleQuestion,
-  faLink,
-} from "@fortawesome/free-solid-svg-icons";
+import React, { useRef } from "react";
+import { faCode, faDisplay, faListCheck, faToolbox } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import React, { useRef, useState } from "react";
 import CustomHook from "./CustomHook";
+import { localizedContent } from "../data/localizedContent";
+import { useLanguage } from "../context/LanguageContext";
+
 function Projects() {
-  const [listProjects] = useState([
-    {
-      name: "Personal project Clone of the XGear e-commerce website",
-      des: "This project is a fully functional clone of the XGear e-commerce website, designed to provide a seamless shopping experience with secure authentication, real-time order tracking, and multiple payment options. The frontend is built using ReactJS with a modern UI, while the backend leverages NestJS for a robust and scalable API. Key features include role-based access control, payment integration with Stripe and Momo, image optimization, and efficient state management with Redux.",
-      mission: "Back-end Developer, system analysis and design",
-      language:
-        "ReactJS, MUI, Redux, NestJS, SQL Server, TypeORM, Redis, Stripe, Momo, Cloudinary",
-      images:
-        "https://res.cloudinary.com/dk0lhapty/image/upload/v1741073590/Capture_hez89p.png",
-      linkGit: [
-        "https://github.com/VuDinhPhong2-1/FE-WebBanDoDienTu",
-        "https://github.com/VuDinhPhong2-1/WebBanDoDienTu",
-      ],
-      linkYtb:
-        "https://www.youtube.com/watch?v=NPIgNaLKzoM&ab_channel=PhongV%C5%A9%C4%90%C3%ACnh",
-    },
-    {
-      name: "Cookbook - Recipe Management App",
-      des: "Cookbook is an application that helps users store, manage, and share recipes. It supports Google login, data storage on Firebase, and runs on the Android platform.",
-      mission:
-        "Developing Front-end (Android Studio) and Back-end (Firebase), system analysis and design",
-      language: "Java, Firebase, Android Studio",
-      images:
-        "https://res.cloudinary.com/dk0lhapty/image/upload/v1741073607/894f445a-81b2-454e-b256-b5edcca0d11f_nvdvxj.jpg",
-      linkGit: ["https://github.com/VuDinhPhong2-1/android_studio_cookBooks"],
-      linkYtb: "",
-    },
-  ]);
+  const { language } = useLanguage();
+  const { projects, sections, ui } = localizedContent[language];
   const scrollTab = useRef();
-  const divs = useRef([]);
-  CustomHook(scrollTab, divs);
+  const animatedRefs = useRef([]);
+  CustomHook(scrollTab, animatedRefs);
+
   return (
-    <section className="projects" ref={scrollTab}>
-      <div
-        className="title"
-        ref={(el) => {
-          el && divs.current.push(el);
-        }}
-      >
-        This is my project
+    <section ref={scrollTab} data-name="projects">
+      <div className="section-heading animation" ref={(el) => el && animatedRefs.current.push(el)}>
+        <div className="eyebrow">{sections.projects.eyebrow}</div>
+        <h2>{sections.projects.title}</h2>
+        <p>{sections.projects.description}</p>
       </div>
-      <div
-        className="des"
-        ref={(el) => {
-          el && divs.current.push(el);
-        }}
-      >
-        Here are some personal projects I have worked on, where I applied my
-        knowledge of web development and system design. Each project has helped
-        me gain valuable experience in building scalable and user-friendly
-        applications.
-      </div>
-      <div className="list">
-        {listProjects.map((value, key) => (
-          <div
-            className="item"
-            ref={(el) => {
-              el && divs.current.push(el);
-            }}
+
+      <div className="project-list">
+        {projects.map((project) => (
+          <article
+            className="project-card animation"
+            key={project.name}
+            ref={(el) => el && animatedRefs.current.push(el)}
           >
-            <div
-              className="images"
-              ref={(el) => {
-                el && divs.current.push(el);
-              }}
-            >
-              <img src={value.images} alt="images project" />
-            </div>
-            <div
-              className="content"
-              ref={(el) => {
-                el && divs.current.push(el);
-              }}
-            >
-              <h3>{value.name}</h3>
-              <div className="des">{value.des}</div>
-              <div className="mission">
-                <div>
-                  <FontAwesomeIcon icon={faLink} />
-                </div>
-                <div>
-                  <h4>Link Git</h4>
-                  <div className="des-link">
-                    {value.linkGit.map((link, index) => (
-                      <a
-                        href={link}
-                        key={index}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="project-link"
-                      >
-                        click here
-                      </a>
-                    ))}
-                  </div>
-                </div>
+            <div className="project-grid">
+              <div className="project-visual">
+                <img src={project.image} alt={project.name} />
               </div>
-              {value.linkYtb && (
-                <div className="mission">
+
+              <div className="project-body">
+                <header>
                   <div>
-                    <FontAwesomeIcon icon={faLink} />
+                    <h3>{project.name}</h3>
+                    <p>{project.role}</p>
                   </div>
-                  <div>
-                    <h4>Link Ytb</h4>
-                    <div className="des-link">
-                      <a
-                        href={value.linkYtb}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="project-link"
-                      >
-                        click here
-                      </a>
+                </header>
+
+                <p>{project.description}</p>
+
+                <div className="project-badges">
+                  {project.badges.map((badge) => (
+                    <span key={badge}>{badge}</span>
+                  ))}
+                </div>
+
+                <div className="project-details">
+                  <div className="project-row">
+                    <div className="icon-wrap">
+                      <FontAwesomeIcon icon={faListCheck} />
+                    </div>
+                    <div>
+                      <strong>{ui.keyFeatures}</strong>
+                      <ul className="bullet-list">
+                        {project.features.map((feature) => (
+                          <li key={feature}>{feature}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  </div>
+
+                  <div className="project-row">
+                    <div className="icon-wrap">
+                      <FontAwesomeIcon icon={faDisplay} />
+                    </div>
+                    <div>
+                      <strong>{ui.frontend}</strong>
+                      <p>{project.technologies.frontend}</p>
+                    </div>
+                  </div>
+
+                  <div className="project-row">
+                    <div className="icon-wrap">
+                      <FontAwesomeIcon icon={faCode} />
+                    </div>
+                    <div>
+                      <strong>{ui.backend}</strong>
+                      <p>{project.technologies.backend}</p>
+                    </div>
+                  </div>
+
+                  <div className="project-row">
+                    <div className="icon-wrap">
+                      <FontAwesomeIcon icon={faToolbox} />
+                    </div>
+                    <div>
+                      <strong>{ui.tools}</strong>
+                      <p>{project.technologies.tools}</p>
                     </div>
                   </div>
                 </div>
-              )}
-              <div className="mission">
-                <div>
-                  <FontAwesomeIcon icon={faPersonCircleQuestion} />
-                </div>
-                <div>
-                  <h4>Mission</h4>
-                  <div className="des">{value.mission}</div>
-                </div>
-              </div>
-              <div className="mission">
-                <div>
-                  <FontAwesomeIcon icon={faEarthAmericas} />
-                </div>
-                <div>
-                  <h4>Languages</h4>
-                  <div className="des">{value.language}</div>
+
+                <div className="project-actions">
+                  {project.sources.map((source) => (
+                    <a
+                      key={source.href}
+                      className="button-secondary"
+                      href={source.href}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      {source.label}
+                    </a>
+                  ))}
                 </div>
               </div>
             </div>
-          </div>
+          </article>
         ))}
       </div>
     </section>

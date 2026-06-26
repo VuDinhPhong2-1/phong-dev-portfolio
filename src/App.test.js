@@ -1,8 +1,19 @@
-import { render, screen } from '@testing-library/react';
-import App from './App';
+import { render, screen } from "@testing-library/react";
+import { Provider } from "react-redux";
+import App from "./App";
+import store from "./redux/store";
 
-test('renders learn react link', () => {
-  render(<App />);
-  const linkElement = screen.getByText(/learn react/i);
-  expect(linkElement).toBeInTheDocument();
+test("renders updated portfolio headline", () => {
+  render(
+    <Provider store={store}>
+      <App />
+    </Provider>,
+  );
+
+  expect(
+    screen.getByRole("heading", { name: /vu dinh phong portfolio/i, level: 1 }),
+  ).toBeInTheDocument();
+  expect(
+    screen.getAllByText(/coding online teacher \| mos 2019 instructor/i).length,
+  ).toBeGreaterThan(0);
 });
