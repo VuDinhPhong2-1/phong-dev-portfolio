@@ -638,7 +638,16 @@ section {
 }
 
 .contact-card a {
+  display: inline-block;
+  max-width: 100%;
+  overflow-wrap: anywhere;
   word-break: break-word;
+}
+
+.contact-card span {
+  display: inline-block;
+  max-width: 100%;
+  overflow-wrap: anywhere;
 }
 
 .animation {
