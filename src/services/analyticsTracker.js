@@ -68,6 +68,51 @@ const getDeviceType = () => {
   return "Desktop";
 };
 
+const getOperatingSystem = () => {
+  const userAgent = navigator.userAgent;
+  const platform = navigator.platform || "";
+
+  if (/Windows/i.test(platform) || /Windows/i.test(userAgent)) return "Windows";
+  if (/Android/i.test(userAgent)) return "Android";
+  if (/iPhone|iPad|iPod/i.test(userAgent)) return "iOS";
+  if (/Mac/i.test(platform)) return "macOS";
+  if (/Linux/i.test(platform)) return "Linux";
+
+  return "Unknown";
+};
+
+const getDeviceModel = () => {
+  const userAgentData = navigator.userAgentData;
+  if (userAgentData?.platform) {
+    return userAgentData.platform;
+  }
+
+  const userAgent = navigator.userAgent;
+  const androidModel = userAgent.match(/Android\s[\d.]+;\s([^;)]+)/i);
+  if (androidModel?.[1]) {
+    return androidModel[1].replace(/\sBuild\/.*/i, "").trim();
+  }
+
+  if (/iPhone/i.test(userAgent)) return "iPhone";
+  if (/iPad/i.test(userAgent)) return "iPad";
+
+  return navigator.platform || "Unknown";
+};
+
+const getNetworkContext = () => {
+  const connection = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
+  if (!connection) {
+    return {};
+  }
+
+  return {
+    networkEffectiveType: connection.effectiveType || "Unknown",
+    networkDownlink: typeof connection.downlink === "number" ? connection.downlink : null,
+    networkRtt: typeof connection.rtt === "number" ? connection.rtt : null,
+    saveData: Boolean(connection.saveData),
+  };
+};
+
 const getVisitorLabel = () => {
   const params = new URLSearchParams(window.location.search);
   return params.get("viewer") || params.get("ref") || "";
@@ -86,10 +131,24 @@ const getClientContext = () => ({
   ...getBaseContext(),
   browser: getBrowserName(),
   device: getDeviceType(),
+  operatingSystem: getOperatingSystem(),
+  deviceModel: getDeviceModel(),
+  platform: navigator.platform || "Unknown",
+  vendor: navigator.vendor || "Unknown",
   language: navigator.language || "Unknown",
+  languages: Array.isArray(navigator.languages) ? navigator.languages.join(", ") : "",
   screen: `${window.screen.width}x${window.screen.height}`,
+  viewport: `${window.innerWidth}x${window.innerHeight}`,
+  colorDepth: window.screen.colorDepth || null,
+  pixelRatio: window.devicePixelRatio || 1,
+  hardwareConcurrency: navigator.hardwareConcurrency || null,
+  deviceMemory: navigator.deviceMemory || null,
+  maxTouchPoints: navigator.maxTouchPoints || 0,
+  cookiesEnabled: navigator.cookieEnabled,
+  doNotTrack: navigator.doNotTrack || window.doNotTrack || "unspecified",
   timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || "Unknown",
   userAgent: navigator.userAgent,
+  ...getNetworkContext(),
 });
 
 const getProfileContext = () => {
@@ -154,7 +213,7 @@ export const attachVisitorProfile = async (profile) => {
 
   const visitorProfile = {
     authUid: profile.authUid || "",
-    provider: profile.provider || "facebook.com",
+    provider: profile.provider || "anonymous_alias",
     displayName: profile.displayName || "",
     photoURL: profile.photoURL || "",
     capturedAt: serverTimestamp(),
@@ -195,10 +254,11 @@ export const attachVisitorProfile = async (profile) => {
         photoURL: visitorProfile.photoURL,
         createdAt: serverTimestamp(),
         ...getBaseContext(),
+        ...getClientContext(),
       }),
     ]);
 
-    await trackPortfolioEvent("facebook_profile_allowed", {
+    await trackPortfolioEvent("anonymous_alias_saved", {
       provider: visitorProfile.provider,
       profileName: visitorProfile.displayName,
       profilePhotoURL: visitorProfile.photoURL,

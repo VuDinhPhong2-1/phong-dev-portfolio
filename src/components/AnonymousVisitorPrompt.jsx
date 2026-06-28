@@ -1,12 +1,11 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { faFacebook } from "@fortawesome/free-brands-svg-icons";
+import { faMasksTheater } from "@fortawesome/free-solid-svg-icons";
 import { faXmark } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { FacebookAuthProvider, signInWithPopup } from "firebase/auth";
 import { attachVisitorProfile, trackPortfolioEvent } from "../services/analyticsTracker";
-import { auth, isAdminEmail, isFirebaseConfigured } from "../services/firebase";
+import { isFirebaseConfigured } from "../services/firebase";
 
-const isFacebookReferrer = () => {
+const isSocialReferrer = () => {
   if (typeof document === "undefined") {
     return false;
   }
@@ -14,7 +13,7 @@ const isFacebookReferrer = () => {
   const params = new URLSearchParams(window.location.search);
   const explicitSource = `${params.get("utm_source") || ""} ${params.get("ref") || ""}`.toLowerCase();
 
-  if (explicitSource.includes("facebook")) {
+  if (explicitSource.includes("facebook") || explicitSource.includes("anonymous")) {
     return true;
   }
 
@@ -30,17 +29,19 @@ const isFacebookReferrer = () => {
   }
 };
 
-function FacebookConsentPrompt() {
+const normalizeAlias = (value) => value.trim().replace(/\s+/g, " ").slice(0, 40);
+
+function AnonymousVisitorPrompt() {
   const [isVisible, setIsVisible] = useState(false);
+  const [alias, setAlias] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
 
   const shouldAsk = useMemo(
     () =>
       isFirebaseConfigured &&
-      auth &&
       !window.location.hash.startsWith("#/admin-analytics") &&
-      isFacebookReferrer(),
+      isSocialReferrer(),
     [],
   );
 
@@ -49,52 +50,38 @@ function FacebookConsentPrompt() {
       return;
     }
 
-    const currentUser = auth.currentUser;
-
-    if (isAdminEmail(currentUser?.email)) {
-      return;
-    }
-
     const timer = window.setTimeout(() => setIsVisible(true), 900);
     return () => window.clearTimeout(timer);
   }, [shouldAsk]);
 
-  const closePrompt = () => {
-    setIsVisible(false);
-  };
+  const handleSubmit = async (event) => {
+    event.preventDefault();
 
-  const handleAllow = async () => {
+    const nextAlias = normalizeAlias(alias);
+    if (!nextAlias) {
+      setErrorMessage("Bạn nhập một tên ẩn danh ngắn nhé.");
+      return;
+    }
+
     setIsSubmitting(true);
     setErrorMessage("");
 
     try {
-      const provider = new FacebookAuthProvider();
-      provider.addScope("public_profile");
-
-      const result = await signInWithPopup(auth, provider);
-      const user = result.user;
-
       await attachVisitorProfile({
-        authUid: user.uid,
-        provider: "facebook.com",
-        displayName: user.displayName,
-        photoURL: user.photoURL,
+        provider: "anonymous_alias",
+        displayName: nextAlias,
       });
-
       setIsVisible(false);
     } catch (error) {
       setErrorMessage(error.message);
-      trackPortfolioEvent("facebook_profile_denied", {
-        reason: error.code || "unknown",
-      });
     } finally {
       setIsSubmitting(false);
     }
   };
 
   const handleSkip = () => {
-    closePrompt();
-    trackPortfolioEvent("facebook_profile_skipped");
+    setIsVisible(false);
+    trackPortfolioEvent("anonymous_alias_skipped");
   };
 
   if (!isVisible) {
@@ -102,39 +89,51 @@ function FacebookConsentPrompt() {
   }
 
   return (
-    <div className="facebook-consent" role="dialog" aria-modal="true" aria-labelledby="facebook-consent-title">
-      <div className="facebook-consent-panel">
+    <div className="anonymous-prompt" role="dialog" aria-modal="true" aria-labelledby="anonymous-prompt-title">
+      <form className="anonymous-prompt-panel" onSubmit={handleSubmit}>
         <button
           type="button"
-          className="facebook-consent-close"
+          className="anonymous-prompt-close"
           aria-label="Close"
           onClick={handleSkip}
         >
           <FontAwesomeIcon icon={faXmark} />
         </button>
 
-        <div className="facebook-consent-icon">
-          <FontAwesomeIcon icon={faFacebook} />
+        <div className="anonymous-prompt-icon">
+          <FontAwesomeIcon icon={faMasksTheater} />
         </div>
-        <h2 id="facebook-consent-title">Cho phép nhận thông tin Facebook?</h2>
+        <h2 id="anonymous-prompt-title">Bạn muốn xuất hiện với tên nào?</h2>
         <p>
-          Portfolio chỉ lưu tên và ảnh đại diện của bạn để chủ portfolio biết ai đã ghé thăm từ
-          Facebook.
+          Bạn có thể đặt một tên ẩn danh để chủ portfolio nhận ra lượt ghé thăm này. Portfolio vẫn
+          lưu thông tin thiết bị cơ bản như trình duyệt, hệ điều hành, kích thước màn hình và nguồn truy cập.
         </p>
+
+        <label className="anonymous-alias-field">
+          Tên ẩn danh
+          <input
+            type="text"
+            value={alias}
+            onChange={(event) => setAlias(event.target.value)}
+            placeholder="Ví dụ: Người hỏi ẩn danh"
+            maxLength={40}
+            autoFocus
+          />
+        </label>
 
         {errorMessage ? <div className="admin-error">{errorMessage}</div> : null}
 
-        <div className="facebook-consent-actions">
-          <button type="button" className="button-primary" onClick={handleAllow} disabled={isSubmitting}>
-            {isSubmitting ? "Đang kết nối..." : "Cho phép"}
+        <div className="anonymous-prompt-actions">
+          <button type="submit" className="button-primary" disabled={isSubmitting}>
+            {isSubmitting ? "Đang lưu..." : "Lưu tên ẩn danh"}
           </button>
           <button type="button" className="button-secondary" onClick={handleSkip}>
             Bỏ qua
           </button>
         </div>
-      </div>
+      </form>
     </div>
   );
 }
 
-export default FacebookConsentPrompt;
+export default AnonymousVisitorPrompt;

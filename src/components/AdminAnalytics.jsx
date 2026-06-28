@@ -6,6 +6,7 @@ import {
   faEye,
   faGlobe,
   faLock,
+  faMicrochip,
   faSignal,
   faUsers,
 } from "@fortawesome/free-solid-svg-icons";
@@ -61,6 +62,22 @@ const countBy = (items, key, fallback = "Unknown") =>
 
 const toSortedEntries = (counts) =>
   Object.entries(counts).sort((first, second) => second[1] - first[1]);
+
+const getVisitorDisplayName = (session) =>
+  session.profileName || session.viewerLabel || session.visitorId || "Anonymous visitor";
+
+const getVisitorInitial = (session) =>
+  getVisitorDisplayName(session).charAt(0).toUpperCase();
+
+const getDeviceLine = (session) =>
+  [
+    session.device,
+    session.deviceModel && session.deviceModel !== session.device ? session.deviceModel : "",
+    session.operatingSystem,
+    session.browser,
+  ]
+    .filter(Boolean)
+    .join(" / ") || "Unknown device";
 
 function AdminAnalytics() {
   const [authReady, setAuthReady] = useState(false);
@@ -317,20 +334,16 @@ function AdminAnalytics() {
                         <img src={session.profilePhotoURL} alt={session.profileName || "Facebook visitor"} />
                       ) : (
                         <span className="visitor-avatar-fallback">
-                          {(session.profileName || session.viewerLabel || "A").charAt(0).toUpperCase()}
+                          {getVisitorInitial(session)}
                         </span>
                       )}
                       <div>
-                        <strong>
-                          {session.profileName ||
-                            session.viewerLabel ||
-                            session.visitorId ||
-                            "Anonymous visitor"}
-                        </strong>
-                        <span>
-                          {session.profileName ? "Facebook profile / " : ""}
-                          {session.device || "Unknown"} / {session.browser || "Unknown"}
-                        </span>
+                        <strong>{getVisitorDisplayName(session)}</strong>
+                        <span>{session.profileName ? "Anonymous alias / " : ""}{getDeviceLine(session)}</span>
+                        <small>
+                          {session.viewport || session.screen || "Unknown screen"}
+                          {session.timezone ? ` / ${session.timezone}` : ""}
+                        </small>
                       </div>
                     </div>
                     <time>{formatDateTime(session.lastSeenAt)}</time>
@@ -402,6 +415,53 @@ function AdminAnalytics() {
             ))}
           </article>
         </div>
+
+        <article className="analytics-panel analytics-device-panel">
+          <h2>
+            <FontAwesomeIcon icon={faMicrochip} />
+            Live device details
+          </h2>
+          <div className="device-detail-grid">
+            {activeSessions.length ? (
+              activeSessions.map((session) => (
+                <div className="device-detail-card" key={`${session.id}-device`}>
+                  <strong>{getVisitorDisplayName(session)}</strong>
+                  <dl>
+                    <div>
+                      <dt>OS</dt>
+                      <dd>{session.operatingSystem || "Unknown"}</dd>
+                    </div>
+                    <div>
+                      <dt>Model</dt>
+                      <dd>{session.deviceModel || session.platform || "Unknown"}</dd>
+                    </div>
+                    <div>
+                      <dt>CPU / RAM</dt>
+                      <dd>
+                        {session.hardwareConcurrency || "?"} cores
+                        {session.deviceMemory ? ` / ${session.deviceMemory} GB` : ""}
+                      </dd>
+                    </div>
+                    <div>
+                      <dt>Screen</dt>
+                      <dd>{session.screen || "Unknown"} @ {session.pixelRatio || 1}x</dd>
+                    </div>
+                    <div>
+                      <dt>Touch</dt>
+                      <dd>{session.maxTouchPoints || 0} points</dd>
+                    </div>
+                    <div>
+                      <dt>Network</dt>
+                      <dd>{session.networkEffectiveType || "Unknown"}</dd>
+                    </div>
+                  </dl>
+                </div>
+              ))
+            ) : (
+              <p className="admin-empty">No live device details yet.</p>
+            )}
+          </div>
+        </article>
       </section>
     </main>
   );
