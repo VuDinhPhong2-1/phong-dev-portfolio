@@ -7,6 +7,7 @@ import { localizedContent } from "../data/localizedContent";
 import { useLanguage } from "../context/LanguageContext";
 import { changeTabActive } from "../redux/actions";
 import { scrollToSection } from "../utils/scrollToSection";
+import { trackPortfolioEvent } from "../services/analyticsTracker";
 
 function Home() {
   const dispatch = useDispatch();
@@ -51,6 +52,7 @@ function Home() {
             href={profile.cvLink}
             target="_blank"
             rel="noopener noreferrer"
+            onClick={() => trackPortfolioEvent("cv_download", { source: "hero" })}
           >
             <FontAwesomeIcon icon={faDownload} />
             {ui.downloadCv}

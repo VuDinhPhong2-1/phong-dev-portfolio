@@ -27,6 +27,21 @@ It correctly bundles React in production mode and optimizes the build for the be
 The build is minified and the filenames include the hashes.\
 Your app is ready to be deployed!
 
+## Portfolio Analytics Setup
+
+This portfolio includes an optional Firebase analytics dashboard at `/#/admin-analytics`.
+
+1. Create a Firebase project.
+2. Enable Firestore Database.
+3. Enable Authentication with the Email/Password provider and create your admin user.
+4. Copy `.env.example` to `.env.local` and fill in the Firebase web app values.
+5. Deploy the Firestore rules from `firestore.rules`.
+6. Restart the React dev server.
+
+When Firebase is configured, the public portfolio records anonymous visitor sessions, page views,
+section views, contact clicks, CV downloads, GitHub clicks, device type, browser, referrer, language,
+screen size, timezone, and online status. The dashboard is private and requires Firebase Auth.
+
 See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
 
 ### `npm run eject`

@@ -4,6 +4,7 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import CustomHook from "./CustomHook";
 import { localizedContent } from "../data/localizedContent";
 import { useLanguage } from "../context/LanguageContext";
+import { trackPortfolioEvent } from "../services/analyticsTracker";
 
 function Projects() {
   const { language } = useLanguage();
@@ -103,6 +104,13 @@ function Projects() {
                       href={source.href}
                       target="_blank"
                       rel="noopener noreferrer"
+                      onClick={() =>
+                        trackPortfolioEvent(source.href.includes("github.com") ? "github_click" : "project_click", {
+                          project: project.name,
+                          source: source.label,
+                          href: source.href,
+                        })
+                      }
                     >
                       {source.label}
                     </a>

@@ -10,6 +10,7 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import CustomHook from "./CustomHook";
 import { localizedContent } from "../data/localizedContent";
 import { useLanguage } from "../context/LanguageContext";
+import { trackPortfolioEvent } from "../services/analyticsTracker";
 
 const getContactIcon = (title) => {
   const normalizedTitle = title.toLowerCase();
@@ -48,6 +49,7 @@ function Contacts() {
               href={profile.cvLink}
               target="_blank"
               rel="noopener noreferrer"
+              onClick={() => trackPortfolioEvent("cv_download", { source: "contact" })}
             >
               {ui.downloadCv}
             </a>
@@ -56,6 +58,7 @@ function Contacts() {
               href={profile.github}
               target="_blank"
               rel="noopener noreferrer"
+              onClick={() => trackPortfolioEvent("github_click", { source: "contact_profile" })}
             >
               {ui.githubProfile}
             </a>
@@ -79,6 +82,12 @@ function Contacts() {
                     href={item.href}
                     target={item.href.startsWith("http") ? "_blank" : undefined}
                     rel="noopener noreferrer"
+                    onClick={() =>
+                      trackPortfolioEvent(item.href.includes("github.com") ? "github_click" : "contact_click", {
+                        channel: item.title,
+                        value: item.value,
+                      })
+                    }
                   >
                     {item.value}
                   </a>

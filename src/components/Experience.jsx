@@ -4,6 +4,7 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import CustomHook from "./CustomHook";
 import { localizedContent } from "../data/localizedContent";
 import { useLanguage } from "../context/LanguageContext";
+import { trackPortfolioEvent } from "../services/analyticsTracker";
 
 function Experience() {
   const { language } = useLanguage();
@@ -39,6 +40,13 @@ function Experience() {
                   href={exp.website}
                   target="_blank"
                   rel="noopener noreferrer"
+                  onClick={() =>
+                    trackPortfolioEvent("contact_click", {
+                      channel: "company_website",
+                      company: exp.company,
+                      href: exp.website,
+                    })
+                  }
                 >
                   <FontAwesomeIcon icon={faGlobe} />
                   {ui.companyWebsite}
