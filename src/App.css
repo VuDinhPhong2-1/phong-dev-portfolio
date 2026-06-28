@@ -1030,6 +1030,7 @@ section {
 
 .admin-kicker {
   display: inline-flex;
+  align-items: center;
   padding: 8px 12px;
   border-radius: 999px;
   background: rgba(18, 176, 201, 0.1);
@@ -1037,6 +1038,43 @@ section {
   font-size: 0.78rem;
   font-weight: 800;
   text-transform: uppercase;
+}
+
+.admin-live-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: 8px;
+  padding: 8px 12px;
+  border-radius: 999px;
+  background: rgba(25, 135, 84, 0.1);
+  color: #157347;
+  font-size: 0.78rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.admin-live-badge span {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #198754;
+  box-shadow: 0 0 0 0 rgba(25, 135, 84, 0.38);
+  animation: livePulse 1.8s ease-out infinite;
+}
+
+@keyframes livePulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(25, 135, 84, 0.38);
+  }
+
+  70% {
+    box-shadow: 0 0 0 8px rgba(25, 135, 84, 0);
+  }
+
+  100% {
+    box-shadow: 0 0 0 0 rgba(25, 135, 84, 0);
+  }
 }
 
 .admin-header h1 {
@@ -1231,6 +1269,69 @@ section {
 
 .facebook-consent-actions button {
   min-width: 0;
+}
+
+.legal-page {
+  width: min(920px, calc(100% - 32px));
+  min-height: 100vh;
+  margin: 0 auto;
+  padding: 56px 0 72px;
+}
+
+.legal-panel {
+  padding: 34px;
+  border: 1px solid rgba(212, 227, 241, 0.95);
+  border-radius: var(--radius-lg);
+  background: rgba(255, 255, 255, 0.92);
+  box-shadow: var(--shadow);
+}
+
+.legal-back {
+  display: inline-flex;
+  margin-bottom: 20px;
+  color: var(--primary);
+  font-weight: 800;
+}
+
+.legal-panel h1 {
+  margin: 18px 0 8px;
+  font-family: "Outfit", sans-serif;
+  font-size: clamp(2.2rem, 5vw, 3.6rem);
+}
+
+.legal-updated,
+.legal-intro,
+.legal-sections p {
+  color: var(--muted);
+  line-height: 1.8;
+}
+
+.legal-intro {
+  max-width: 760px;
+  font-size: 1.04rem;
+}
+
+.legal-sections {
+  display: grid;
+  gap: 16px;
+  margin-top: 24px;
+}
+
+.legal-sections article {
+  padding: 20px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  background: rgba(232, 242, 251, 0.46);
+}
+
+.legal-sections h2 {
+  margin: 0 0 8px;
+  font-family: "Outfit", sans-serif;
+  font-size: 1.25rem;
+}
+
+.legal-sections p {
+  margin: 0;
 }
 
 .visitor-row strong,

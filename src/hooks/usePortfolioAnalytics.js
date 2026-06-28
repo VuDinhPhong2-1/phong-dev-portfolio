@@ -6,7 +6,7 @@ import {
   trackPortfolioEvent,
 } from "../services/analyticsTracker";
 
-const HEARTBEAT_MS = 30 * 1000;
+const HEARTBEAT_MS = 10 * 1000;
 
 export const usePortfolioAnalytics = () => {
   const viewedSectionsRef = useRef(new Set());

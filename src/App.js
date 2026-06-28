@@ -10,6 +10,7 @@ import Contacts from "./components/Contacts";
 import Experience from "./components/Experience";
 import AdminAnalytics from "./components/AdminAnalytics";
 import FacebookConsentPrompt from "./components/FacebookConsentPrompt";
+import LegalPage from "./components/LegalPage";
 import { LanguageProvider } from "./context/LanguageContext";
 import { usePortfolioAnalytics } from "./hooks/usePortfolioAnalytics";
 
@@ -42,6 +43,16 @@ function App() {
   }, []);
 
   const isAdminRoute = hash.startsWith("#/admin-analytics");
+  const isPrivacyRoute = hash.startsWith("#/privacy");
+  const isDataDeletionRoute = hash.startsWith("#/data-deletion");
+
+  if (isPrivacyRoute) {
+    return <LegalPage page="privacy" />;
+  }
+
+  if (isDataDeletionRoute) {
+    return <LegalPage page="data-deletion" />;
+  }
 
   return <LanguageProvider>{isAdminRoute ? <AdminAnalytics /> : <PortfolioApp />}</LanguageProvider>;
 }

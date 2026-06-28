@@ -12,7 +12,7 @@ const VISITOR_ID_KEY = "portfolio_visitor_id";
 const VISITOR_CREATED_AT_KEY = "portfolio_visitor_created_at";
 const SESSION_ID_KEY = "portfolio_session_id";
 const SESSION_CREATED_AT_KEY = "portfolio_session_created_at";
-const ONLINE_WINDOW_MS = 2 * 60 * 1000;
+const ONLINE_WINDOW_MS = 45 * 1000;
 
 let currentVisitorId = null;
 let currentSessionId = null;

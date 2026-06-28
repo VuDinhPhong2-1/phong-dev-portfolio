@@ -13,17 +13,16 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { onAuthStateChanged, signInWithEmailAndPassword, signOut } from "firebase/auth";
 import {
   collection,
-  getCountFromServer,
   limit,
   onSnapshot,
   orderBy,
   query,
-  where,
 } from "firebase/firestore";
 import { auth, db, isFirebaseConfigured } from "../services/firebase";
 import { isAdminEmail } from "../services/firebase";
 
-const ONLINE_WINDOW_MS = 2 * 60 * 1000;
+const ONLINE_WINDOW_MS = 45 * 1000;
+const LIVE_TICK_MS = 5 * 1000;
 
 const toMillis = (value) => {
   if (!value) return 0;
@@ -70,14 +69,11 @@ function AdminAnalytics() {
   const [password, setPassword] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
-  const [counts, setCounts] = useState({
-    totalPageViews: 0,
-    totalVisitors: 0,
-    totalEvents: 0,
-  });
+  const [now, setNow] = useState(Date.now());
   const [visitors, setVisitors] = useState([]);
   const [sessions, setSessions] = useState([]);
   const [events, setEvents] = useState([]);
+  const [allEvents, setAllEvents] = useState([]);
   const isAdminUser = isAdminEmail(user?.email);
 
   useEffect(() => {
@@ -93,63 +89,58 @@ function AdminAnalytics() {
   }, []);
 
   useEffect(() => {
+    const timer = window.setInterval(() => setNow(Date.now()), LIVE_TICK_MS);
+    return () => window.clearInterval(timer);
+  }, []);
+
+  useEffect(() => {
     if (!user || !isAdminEmail(user.email) || !db) {
       return undefined;
     }
 
-    const refreshCounts = async () => {
-      try {
-        const [visitorCount, pageViewCount, eventCount] = await Promise.all([
-          getCountFromServer(collection(db, "visitors")),
-          getCountFromServer(query(collection(db, "events"), where("type", "==", "page_view"))),
-          getCountFromServer(collection(db, "events")),
-        ]);
-
-        setCounts({
-          totalVisitors: visitorCount.data().count,
-          totalPageViews: pageViewCount.data().count,
-          totalEvents: eventCount.data().count,
-        });
-      } catch (error) {
-        setErrorMessage(error.message);
-      }
-    };
-
-    const visitorsQuery = query(
-      collection(db, "visitors"),
-      orderBy("lastSeenAt", "desc"),
-      limit(80),
-    );
+    const visitorsQuery = collection(db, "visitors");
     const sessionsQuery = query(
       collection(db, "sessions"),
       orderBy("lastSeenAt", "desc"),
-      limit(80),
+      limit(160),
     );
     const eventsQuery = query(collection(db, "events"), orderBy("createdAt", "desc"), limit(120));
-
-    refreshCounts();
+    const allEventsQuery = collection(db, "events");
 
     const unsubscribeVisitors = onSnapshot(visitorsQuery, (snapshot) => {
       setVisitors(snapshot.docs.map((item) => ({ id: item.id, ...item.data() })));
-    });
+    }, (error) => setErrorMessage(error.message));
     const unsubscribeSessions = onSnapshot(sessionsQuery, (snapshot) => {
       setSessions(snapshot.docs.map((item) => ({ id: item.id, ...item.data() })));
-    });
+    }, (error) => setErrorMessage(error.message));
     const unsubscribeEvents = onSnapshot(eventsQuery, (snapshot) => {
       setEvents(snapshot.docs.map((item) => ({ id: item.id, ...item.data() })));
-    });
+    }, (error) => setErrorMessage(error.message));
+    const unsubscribeAllEvents = onSnapshot(allEventsQuery, (snapshot) => {
+      setAllEvents(snapshot.docs.map((item) => ({ id: item.id, ...item.data() })));
+    }, (error) => setErrorMessage(error.message));
 
     return () => {
       unsubscribeVisitors();
       unsubscribeSessions();
       unsubscribeEvents();
+      unsubscribeAllEvents();
     };
   }, [user]);
 
+  const counts = useMemo(
+    () => ({
+      totalPageViews: allEvents.filter((event) => event.type === "page_view").length,
+      totalVisitors: visitors.length,
+      totalEvents: allEvents.length,
+    }),
+    [allEvents, visitors],
+  );
+
   const activeSessions = useMemo(() => {
-    const cutoff = Date.now() - ONLINE_WINDOW_MS;
+    const cutoff = now - ONLINE_WINDOW_MS;
     return sessions.filter((session) => session.isActive !== false && toMillis(session.lastSeenAt) > cutoff);
-  }, [sessions]);
+  }, [now, sessions]);
 
   const referrerRows = useMemo(
     () =>
@@ -276,6 +267,10 @@ function AdminAnalytics() {
         <header className="admin-header">
           <div>
             <span className="admin-kicker">Private dashboard</span>
+            <span className="admin-live-badge">
+              <span aria-hidden="true" />
+              Live
+            </span>
             <h1>Portfolio Analytics</h1>
             <p>{user.email}</p>
           </div>
