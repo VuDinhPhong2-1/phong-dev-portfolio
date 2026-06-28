@@ -7,6 +7,7 @@ import {
   faGlobe,
   faLock,
   faMicrochip,
+  faReply,
   faSignal,
   faUsers,
 } from "@fortawesome/free-solid-svg-icons";
@@ -21,6 +22,7 @@ import {
 } from "firebase/firestore";
 import { auth, db, isFirebaseConfigured } from "../services/firebase";
 import { isAdminEmail } from "../services/firebase";
+import { answerAnonymousQuestion, subscribeAllQuestions } from "../services/questionService";
 
 const ONLINE_WINDOW_MS = 45 * 1000;
 const LIVE_TICK_MS = 5 * 1000;
@@ -91,6 +93,9 @@ function AdminAnalytics() {
   const [sessions, setSessions] = useState([]);
   const [events, setEvents] = useState([]);
   const [allEvents, setAllEvents] = useState([]);
+  const [questions, setQuestions] = useState([]);
+  const [answers, setAnswers] = useState({});
+  const [publicFlags, setPublicFlags] = useState({});
   const isAdminUser = isAdminEmail(user?.email);
 
   useEffect(() => {
@@ -136,12 +141,14 @@ function AdminAnalytics() {
     const unsubscribeAllEvents = onSnapshot(allEventsQuery, (snapshot) => {
       setAllEvents(snapshot.docs.map((item) => ({ id: item.id, ...item.data() })));
     }, (error) => setErrorMessage(error.message));
+    const unsubscribeQuestions = subscribeAllQuestions(setQuestions, (error) => setErrorMessage(error.message));
 
     return () => {
       unsubscribeVisitors();
       unsubscribeSessions();
       unsubscribeEvents();
       unsubscribeAllEvents();
+      unsubscribeQuestions();
     };
   }, [user]);
 
@@ -189,6 +196,23 @@ function AdminAnalytics() {
       setErrorMessage(error.message);
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  const handleAnswerQuestion = async (item) => {
+    setErrorMessage("");
+
+    try {
+      await answerAnonymousQuestion({
+        questionId: item.id,
+        alias: item.alias,
+        question: item.question,
+        answer: answers[item.id] ?? item.answer ?? "",
+        isPublic: publicFlags[item.id] !== false,
+      });
+      setAnswers((current) => ({ ...current, [item.id]: "" }));
+    } catch (error) {
+      setErrorMessage(error.message);
     }
   };
 
@@ -459,6 +483,58 @@ function AdminAnalytics() {
               ))
             ) : (
               <p className="admin-empty">No live device details yet.</p>
+            )}
+          </div>
+        </article>
+
+        <article className="analytics-panel admin-question-panel">
+          <h2>
+            <FontAwesomeIcon icon={faReply} />
+            Anonymous questions
+          </h2>
+          <div className="admin-question-list">
+            {questions.length ? (
+              questions.map((item) => (
+                <div className="admin-question-card" key={item.id}>
+                  <div className="admin-question-meta">
+                    <strong>{item.alias || "Người hỏi ẩn danh"}</strong>
+                    <span className={item.status === "answered" ? "question-status answered" : "question-status"}>
+                      {item.status === "answered" ? "Answered" : "Pending"}
+                    </span>
+                  </div>
+                  <p>{item.question}</p>
+                  {item.answer ? <blockquote>{item.answer}</blockquote> : null}
+                  <textarea
+                    value={answers[item.id] ?? item.answer ?? ""}
+                    onChange={(event) =>
+                      setAnswers((current) => ({ ...current, [item.id]: event.target.value }))
+                    }
+                    placeholder="Write your answer..."
+                    rows={3}
+                  />
+                  <div className="admin-question-actions">
+                    <label>
+                      <input
+                        type="checkbox"
+                        checked={publicFlags[item.id] !== false}
+                        onChange={(event) =>
+                          setPublicFlags((current) => ({ ...current, [item.id]: event.target.checked }))
+                        }
+                      />
+                      Public answer
+                    </label>
+                    <button
+                      type="button"
+                      className="button-primary"
+                      onClick={() => handleAnswerQuestion(item)}
+                    >
+                      Save answer
+                    </button>
+                  </div>
+                </div>
+              ))
+            ) : (
+              <p className="admin-empty">No anonymous questions yet.</p>
             )}
           </div>
         </article>

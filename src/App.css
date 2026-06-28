@@ -775,6 +775,7 @@ section {
   .hero,
   .about-grid,
   .contact-grid,
+  .anonymous-questions,
   .project-grid,
   .skills-grid,
   .education-grid {
@@ -867,6 +868,7 @@ section {
 
   .hero-actions,
   .project-actions,
+  .question-form button,
   .contact-list {
     grid-template-columns: 1fr;
   }
@@ -874,6 +876,7 @@ section {
   .hero-actions a,
   .hero-actions button,
   .project-actions a,
+  .question-form button,
   .button-primary,
   .button-secondary {
     width: 100%;
@@ -1486,6 +1489,197 @@ section {
   overflow-wrap: anywhere;
 }
 
+.anonymous-questions {
+  display: grid;
+  grid-template-columns: 1.05fr 0.95fr;
+  gap: 24px;
+  margin-top: 28px;
+}
+
+.question-form-card,
+.answered-questions-card {
+  border: 1px solid rgba(212, 227, 241, 0.95);
+  border-radius: var(--radius-lg);
+  background: rgba(255, 255, 255, 0.9);
+  box-shadow: var(--shadow);
+}
+
+.question-form-card {
+  padding: 28px;
+  background:
+    linear-gradient(135deg, rgba(13, 110, 253, 0.08), rgba(18, 176, 201, 0.08)),
+    rgba(255, 255, 255, 0.94);
+}
+
+.answered-questions-card {
+  padding: 24px;
+}
+
+.question-form-heading {
+  display: grid;
+  grid-template-columns: 52px 1fr;
+  gap: 14px;
+  align-items: start;
+  margin-bottom: 20px;
+}
+
+.question-form-heading > span {
+  width: 52px;
+  height: 52px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 16px;
+  background: rgba(13, 110, 253, 0.12);
+  color: var(--primary);
+  font-size: 1.25rem;
+}
+
+.question-form-heading h3 {
+  margin: 0 0 8px;
+  font-family: "Outfit", sans-serif;
+  font-size: 1.45rem;
+}
+
+.question-form-heading p {
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.7;
+}
+
+.question-form {
+  display: grid;
+  gap: 14px;
+}
+
+.question-form label {
+  display: grid;
+  gap: 8px;
+  color: var(--text);
+  font-weight: 800;
+}
+
+.question-form input,
+.question-form textarea,
+.admin-question-card textarea {
+  width: 100%;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  padding: 13px 14px;
+  color: var(--text);
+  font: inherit;
+  background: #fff;
+  resize: vertical;
+}
+
+.question-form input:focus,
+.question-form textarea:focus,
+.admin-question-card textarea:focus {
+  border-color: var(--primary);
+  outline: 3px solid rgba(13, 110, 253, 0.14);
+}
+
+.question-form button {
+  width: fit-content;
+}
+
+.question-success {
+  padding: 12px 14px;
+  border: 1px solid rgba(25, 135, 84, 0.24);
+  border-radius: var(--radius-sm);
+  background: rgba(25, 135, 84, 0.08);
+  color: #157347;
+  line-height: 1.6;
+}
+
+.answered-question-list,
+.admin-question-list {
+  display: grid;
+  gap: 12px;
+}
+
+.answered-question,
+.admin-question-card {
+  padding: 14px;
+  border-radius: var(--radius-sm);
+  background: rgba(232, 242, 251, 0.65);
+}
+
+.answered-question div,
+.admin-question-meta,
+.admin-question-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.answered-question time {
+  color: var(--muted);
+  font-size: 0.82rem;
+}
+
+.answered-question-text,
+.answered-question-answer,
+.admin-question-card p,
+.admin-question-card blockquote {
+  margin: 0;
+  line-height: 1.7;
+}
+
+.answered-question-text {
+  color: var(--text);
+  font-weight: 800;
+}
+
+.answered-question-answer {
+  margin-top: 8px;
+  color: var(--muted);
+}
+
+.admin-question-panel {
+  margin-top: 16px;
+}
+
+.admin-question-card {
+  display: grid;
+  gap: 12px;
+}
+
+.admin-question-card blockquote {
+  padding: 12px;
+  border-left: 4px solid var(--primary);
+  border-radius: var(--radius-sm);
+  background: rgba(255, 255, 255, 0.76);
+  color: var(--muted);
+}
+
+.question-status {
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: rgba(255, 193, 7, 0.16);
+  color: #8a6400;
+  font-size: 0.78rem;
+  font-weight: 800;
+}
+
+.question-status.answered {
+  background: rgba(25, 135, 84, 0.12);
+  color: #157347;
+}
+
+.admin-question-actions label {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--muted);
+  font-weight: 800;
+}
+
+.admin-question-actions button {
+  min-width: 140px;
+}
+
 .visitor-row time,
 .event-row time {
   flex: 0 0 auto;
@@ -1528,7 +1722,10 @@ section {
   }
 
   .visitor-row,
-  .event-row {
+  .event-row,
+  .admin-question-meta,
+  .admin-question-actions,
+  .answered-question div {
     align-items: flex-start;
     flex-direction: column;
   }

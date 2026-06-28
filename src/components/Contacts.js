@@ -11,6 +11,7 @@ import CustomHook from "./CustomHook";
 import { localizedContent } from "../data/localizedContent";
 import { useLanguage } from "../context/LanguageContext";
 import { trackPortfolioEvent } from "../services/analyticsTracker";
+import AnonymousQuestions from "./AnonymousQuestions";
 
 const getContactIcon = (title) => {
   const normalizedTitle = title.toLowerCase();
@@ -99,6 +100,8 @@ function Contacts() {
           ))}
         </div>
       </div>
+
+      <AnonymousQuestions />
     </section>
   );
 }
