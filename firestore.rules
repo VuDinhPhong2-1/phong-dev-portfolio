@@ -28,5 +28,13 @@ service cloud.firestore {
       allow update, delete: if false;
       allow read: if isAdmin();
     }
+
+    match /profileConsents/{consentId} {
+      allow create: if request.resource.data.visitorId is string &&
+        request.resource.data.sessionId is string &&
+        request.resource.data.provider is string;
+      allow update, delete: if false;
+      allow read: if isAdmin();
+    }
   }
 }

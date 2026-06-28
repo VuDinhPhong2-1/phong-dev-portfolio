@@ -18,6 +18,7 @@ let currentVisitorId = null;
 let currentSessionId = null;
 let currentVisitorCreatedAt = null;
 let currentSessionCreatedAt = null;
+let currentVisitorProfile = null;
 let started = false;
 
 const canTrack = () =>
@@ -91,6 +92,18 @@ const getClientContext = () => ({
   userAgent: navigator.userAgent,
 });
 
+const getProfileContext = () => {
+  if (!currentVisitorProfile) {
+    return {};
+  }
+
+  return {
+    profileName: currentVisitorProfile.displayName,
+    profilePhotoURL: currentVisitorProfile.photoURL,
+    profileProvider: currentVisitorProfile.provider,
+  };
+};
+
 const ensureIds = () => {
   currentVisitorId = readOrCreateLocalValue(localStorage, VISITOR_ID_KEY, () =>
     createId("visitor"),
@@ -122,6 +135,7 @@ export const trackPortfolioEvent = async (type, metadata = {}) => {
       sessionId: currentSessionId,
       createdAt: serverTimestamp(),
       ...getBaseContext(),
+      ...getProfileContext(),
       ...metadata,
     });
   } catch (error) {
@@ -145,6 +159,7 @@ export const attachVisitorProfile = async (profile) => {
     photoURL: profile.photoURL || "",
     capturedAt: serverTimestamp(),
   };
+  currentVisitorProfile = visitorProfile;
 
   try {
     await Promise.all([
@@ -171,6 +186,16 @@ export const attachVisitorProfile = async (profile) => {
         },
         { merge: true },
       ),
+      addDoc(collection(db, "profileConsents"), {
+        visitorId: currentVisitorId,
+        sessionId: currentSessionId,
+        authUid: visitorProfile.authUid,
+        provider: visitorProfile.provider,
+        displayName: visitorProfile.displayName,
+        photoURL: visitorProfile.photoURL,
+        createdAt: serverTimestamp(),
+        ...getBaseContext(),
+      }),
     ]);
 
     await trackPortfolioEvent("facebook_profile_allowed", {
@@ -220,6 +245,7 @@ export const startPortfolioTracking = async () => {
           isActive: true,
           onlineWindowMs: ONLINE_WINDOW_MS,
           ...clientContext,
+          ...getProfileContext(),
         },
         { merge: true },
       ),
@@ -247,11 +273,13 @@ export const heartbeatPortfolioSession = async () => {
         lastSeenAt,
         lastSessionId: currentSessionId,
         ...getBaseContext(),
+        ...getProfileContext(),
       }),
       updateDoc(doc(db, "sessions", currentSessionId), {
         lastSeenAt,
         isActive: true,
         ...getBaseContext(),
+        ...getProfileContext(),
       }),
     ]);
   } catch (error) {

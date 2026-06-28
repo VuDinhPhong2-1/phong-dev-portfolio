@@ -6,8 +6,6 @@ import { FacebookAuthProvider, signInWithPopup } from "firebase/auth";
 import { attachVisitorProfile, trackPortfolioEvent } from "../services/analyticsTracker";
 import { auth, isAdminEmail, isFirebaseConfigured } from "../services/firebase";
 
-const FACEBOOK_PROFILE_STATUS_KEY = "portfolio_facebook_profile_status";
-
 const isFacebookReferrer = () => {
   if (typeof document === "undefined") {
     return false;
@@ -52,9 +50,8 @@ function FacebookConsentPrompt() {
     }
 
     const currentUser = auth.currentUser;
-    const status = localStorage.getItem(FACEBOOK_PROFILE_STATUS_KEY);
 
-    if (status === "allowed" || status === "skipped" || isAdminEmail(currentUser?.email)) {
+    if (isAdminEmail(currentUser?.email)) {
       return;
     }
 
@@ -62,8 +59,7 @@ function FacebookConsentPrompt() {
     return () => window.clearTimeout(timer);
   }, [shouldAsk]);
 
-  const closePrompt = (status) => {
-    localStorage.setItem(FACEBOOK_PROFILE_STATUS_KEY, status);
+  const closePrompt = () => {
     setIsVisible(false);
   };
 
@@ -85,7 +81,6 @@ function FacebookConsentPrompt() {
         photoURL: user.photoURL,
       });
 
-      localStorage.setItem(FACEBOOK_PROFILE_STATUS_KEY, "allowed");
       setIsVisible(false);
     } catch (error) {
       setErrorMessage(error.message);
@@ -98,7 +93,7 @@ function FacebookConsentPrompt() {
   };
 
   const handleSkip = () => {
-    closePrompt("skipped");
+    closePrompt();
     trackPortfolioEvent("facebook_profile_skipped");
   };
 
