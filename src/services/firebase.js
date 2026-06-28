@@ -22,3 +22,11 @@ export const isFirebaseConfigured = Boolean(
 export const firebaseApp = isFirebaseConfigured ? initializeApp(firebaseConfig) : null;
 export const auth = firebaseApp ? getAuth(firebaseApp) : null;
 export const db = firebaseApp ? getFirestore(firebaseApp) : null;
+
+export const adminEmails = (process.env.REACT_APP_ADMIN_EMAILS || "")
+  .split(",")
+  .map((email) => email.trim().toLowerCase())
+  .filter(Boolean);
+
+export const isAdminEmail = (email) =>
+  Boolean(email && adminEmails.includes(email.trim().toLowerCase()));

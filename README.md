@@ -35,12 +35,18 @@ This portfolio includes an optional Firebase analytics dashboard at `/#/admin-an
 2. Enable Firestore Database.
 3. Enable Authentication with the Email/Password provider and create your admin user.
 4. Copy `.env.example` to `.env.local` and fill in the Firebase web app values.
-5. Deploy the Firestore rules from `firestore.rules`.
-6. Restart the React dev server.
+5. Add your dashboard admin email to `REACT_APP_ADMIN_EMAILS` and to the `isAdmin()` list in
+   `firestore.rules`.
+6. Deploy the Firestore rules from `firestore.rules`.
+7. Restart the React dev server.
 
 When Firebase is configured, the public portfolio records anonymous visitor sessions, page views,
 section views, contact clicks, CV downloads, GitHub clicks, device type, browser, referrer, language,
 screen size, timezone, and online status. The dashboard is private and requires Firebase Auth.
+
+If a visitor comes from Facebook, the portfolio can ask for permission to capture only their
+Facebook display name and avatar. To enable that flow, turn on Facebook as a Firebase Authentication
+provider and configure the Facebook app ID/secret in Firebase Console.
 
 See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
 

@@ -6,14 +6,19 @@ service cloud.firestore {
       return request.auth != null;
     }
 
+    function isAdmin() {
+      return isSignedIn() &&
+        request.auth.token.email in ['vudinhphong.261001@gmail.com'];
+    }
+
     match /visitors/{visitorId} {
       allow create, update: if request.resource.data.visitorId == visitorId;
-      allow read, delete: if isSignedIn();
+      allow read, delete: if isAdmin();
     }
 
     match /sessions/{sessionId} {
       allow create, update: if request.resource.data.sessionId == sessionId;
-      allow read, delete: if isSignedIn();
+      allow read, delete: if isAdmin();
     }
 
     match /events/{eventId} {
@@ -21,7 +26,7 @@ service cloud.firestore {
         request.resource.data.visitorId is string &&
         request.resource.data.sessionId is string;
       allow update, delete: if false;
-      allow read: if isSignedIn();
+      allow read: if isAdmin();
     }
   }
 }

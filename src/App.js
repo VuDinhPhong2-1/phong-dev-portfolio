@@ -9,6 +9,7 @@ import Projects from "./components/Projects";
 import Contacts from "./components/Contacts";
 import Experience from "./components/Experience";
 import AdminAnalytics from "./components/AdminAnalytics";
+import FacebookConsentPrompt from "./components/FacebookConsentPrompt";
 import { LanguageProvider } from "./context/LanguageContext";
 import { usePortfolioAnalytics } from "./hooks/usePortfolioAnalytics";
 
@@ -25,6 +26,7 @@ function PortfolioApp() {
       <Skills />
       <Education />
       <Contacts />
+      <FacebookConsentPrompt />
     </main>
   );
 }

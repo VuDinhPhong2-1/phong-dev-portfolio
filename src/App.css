@@ -991,6 +991,11 @@ section {
   opacity: 0.72;
 }
 
+.admin-signout-full {
+  margin-top: 24px;
+  width: 100%;
+}
+
 .admin-error {
   padding: 12px 14px;
   border: 1px solid rgba(220, 53, 69, 0.26);
@@ -1128,6 +1133,106 @@ section {
   gap: 4px;
 }
 
+.visitor-profile {
+  display: flex !important;
+  align-items: center;
+  gap: 12px;
+}
+
+.visitor-profile img,
+.visitor-avatar-fallback {
+  width: 42px;
+  height: 42px;
+  flex: 0 0 42px;
+  border-radius: 50%;
+}
+
+.visitor-profile img {
+  object-fit: cover;
+  border: 1px solid var(--line);
+}
+
+.visitor-avatar-fallback {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(13, 110, 253, 0.1);
+  color: var(--primary);
+  font-weight: 800;
+}
+
+.facebook-consent {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding: 20px;
+  background: rgba(16, 35, 61, 0.24);
+  backdrop-filter: blur(4px);
+}
+
+.facebook-consent-panel {
+  position: relative;
+  width: min(460px, 100%);
+  padding: 26px;
+  border: 1px solid rgba(212, 227, 241, 0.95);
+  border-radius: var(--radius-lg);
+  background: rgba(255, 255, 255, 0.96);
+  box-shadow: 0 26px 70px rgba(16, 35, 61, 0.18);
+}
+
+.facebook-consent-close {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  width: 38px;
+  height: 38px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--line);
+  border-radius: 50%;
+  background: #fff;
+  color: var(--muted);
+  cursor: pointer;
+}
+
+.facebook-consent-icon {
+  width: 50px;
+  height: 50px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 16px;
+  background: rgba(24, 119, 242, 0.1);
+  color: #1877f2;
+  font-size: 1.35rem;
+}
+
+.facebook-consent-panel h2 {
+  margin: 18px 0 10px;
+  font-family: "Outfit", sans-serif;
+  font-size: 1.55rem;
+}
+
+.facebook-consent-panel p {
+  margin: 0 0 18px;
+  color: var(--muted);
+  line-height: 1.7;
+}
+
+.facebook-consent-actions {
+  display: grid;
+  grid-template-columns: 1fr 0.8fr;
+  gap: 12px;
+}
+
+.facebook-consent-actions button {
+  min-width: 0;
+}
+
 .visitor-row strong,
 .visitor-row span,
 .event-row strong,
@@ -1180,5 +1285,18 @@ section {
   .event-row {
     align-items: flex-start;
     flex-direction: column;
+  }
+
+  .facebook-consent {
+    align-items: flex-end;
+    padding: 10px;
+  }
+
+  .facebook-consent-panel {
+    padding: 22px;
+  }
+
+  .facebook-consent-actions {
+    grid-template-columns: 1fr;
   }
 }

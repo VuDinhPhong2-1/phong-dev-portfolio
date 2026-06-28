@@ -21,6 +21,7 @@ import {
   where,
 } from "firebase/firestore";
 import { auth, db, isFirebaseConfigured } from "../services/firebase";
+import { isAdminEmail } from "../services/firebase";
 
 const ONLINE_WINDOW_MS = 2 * 60 * 1000;
 
@@ -77,6 +78,7 @@ function AdminAnalytics() {
   const [visitors, setVisitors] = useState([]);
   const [sessions, setSessions] = useState([]);
   const [events, setEvents] = useState([]);
+  const isAdminUser = isAdminEmail(user?.email);
 
   useEffect(() => {
     if (!isFirebaseConfigured || !auth) {
@@ -91,7 +93,7 @@ function AdminAnalytics() {
   }, []);
 
   useEffect(() => {
-    if (!user || !db) {
+    if (!user || !isAdminEmail(user.email) || !db) {
       return undefined;
     }
 
@@ -250,6 +252,24 @@ function AdminAnalytics() {
     );
   }
 
+  if (!isAdminUser) {
+    return (
+      <main className="admin-page">
+        <section className="admin-auth-panel">
+          <div className="admin-icon">
+            <FontAwesomeIcon icon={faLock} />
+          </div>
+          <h1>Admin access only</h1>
+          <p>This account can submit visitor profile consent, but it cannot view private analytics.</p>
+          <button type="button" className="button-primary admin-signout-full" onClick={() => signOut(auth)}>
+            <FontAwesomeIcon icon={faArrowRightFromBracket} />
+            Sign out
+          </button>
+        </section>
+      </main>
+    );
+  }
+
   return (
     <main className="admin-page">
       <section className="admin-shell">
@@ -297,11 +317,26 @@ function AdminAnalytics() {
               {activeSessions.length ? (
                 activeSessions.map((session) => (
                   <div className="visitor-row" key={session.id}>
-                    <div>
-                      <strong>{session.viewerLabel || session.visitorId || "Anonymous visitor"}</strong>
-                      <span>
-                        {session.device || "Unknown"} / {session.browser || "Unknown"}
-                      </span>
+                    <div className="visitor-profile">
+                      {session.profilePhotoURL ? (
+                        <img src={session.profilePhotoURL} alt={session.profileName || "Facebook visitor"} />
+                      ) : (
+                        <span className="visitor-avatar-fallback">
+                          {(session.profileName || session.viewerLabel || "A").charAt(0).toUpperCase()}
+                        </span>
+                      )}
+                      <div>
+                        <strong>
+                          {session.profileName ||
+                            session.viewerLabel ||
+                            session.visitorId ||
+                            "Anonymous visitor"}
+                        </strong>
+                        <span>
+                          {session.profileName ? "Facebook profile / " : ""}
+                          {session.device || "Unknown"} / {session.browser || "Unknown"}
+                        </span>
+                      </div>
                     </div>
                     <time>{formatDateTime(session.lastSeenAt)}</time>
                   </div>
@@ -316,11 +351,18 @@ function AdminAnalytics() {
             <h2>Recent events</h2>
             <div className="event-list">
               {events.slice(0, 12).map((event) => (
-                <div className="event-row" key={event.id}>
-                  <div>
-                    <strong>{event.type}</strong>
-                    <span>{event.section || event.channel || event.project || event.path || "Portfolio"}</span>
-                  </div>
+                  <div className="event-row" key={event.id}>
+                    <div>
+                      <strong>{event.type}</strong>
+                      <span>
+                        {event.profileName ||
+                          event.section ||
+                          event.channel ||
+                          event.project ||
+                          event.path ||
+                          "Portfolio"}
+                      </span>
+                    </div>
                   <time>{formatDateTime(event.createdAt)}</time>
                 </div>
               ))}

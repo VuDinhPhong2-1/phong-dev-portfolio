@@ -131,6 +131,60 @@ export const trackPortfolioEvent = async (type, metadata = {}) => {
   }
 };
 
+export const attachVisitorProfile = async (profile) => {
+  if (!canTrack()) {
+    return;
+  }
+
+  ensureIds();
+
+  const visitorProfile = {
+    authUid: profile.authUid || "",
+    provider: profile.provider || "facebook.com",
+    displayName: profile.displayName || "",
+    photoURL: profile.photoURL || "",
+    capturedAt: serverTimestamp(),
+  };
+
+  try {
+    await Promise.all([
+      setDoc(
+        doc(db, "visitors", currentVisitorId),
+        {
+          visitorId: currentVisitorId,
+          lastSeenAt: serverTimestamp(),
+          profile: visitorProfile,
+          profileName: visitorProfile.displayName,
+          profilePhotoURL: visitorProfile.photoURL,
+        },
+        { merge: true },
+      ),
+      setDoc(
+        doc(db, "sessions", currentSessionId),
+        {
+          sessionId: currentSessionId,
+          visitorId: currentVisitorId,
+          lastSeenAt: serverTimestamp(),
+          profile: visitorProfile,
+          profileName: visitorProfile.displayName,
+          profilePhotoURL: visitorProfile.photoURL,
+        },
+        { merge: true },
+      ),
+    ]);
+
+    await trackPortfolioEvent("facebook_profile_allowed", {
+      provider: visitorProfile.provider,
+      profileName: visitorProfile.displayName,
+      profilePhotoURL: visitorProfile.photoURL,
+    });
+  } catch (error) {
+    if (process.env.NODE_ENV === "development") {
+      console.warn("Portfolio analytics profile attach failed", error);
+    }
+  }
+};
+
 export const startPortfolioTracking = async () => {
   if (!canTrack() || started) {
     return { enabled: canTrack(), visitorId: currentVisitorId, sessionId: currentSessionId };
