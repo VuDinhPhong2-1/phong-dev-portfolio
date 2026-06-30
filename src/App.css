@@ -1699,6 +1699,18 @@ section {
   gap: 12px;
 }
 
+.admin-question-meta div {
+  min-width: 0;
+  display: grid;
+  gap: 4px;
+}
+
+.admin-question-meta span:not(.question-status) {
+  color: var(--muted);
+  font-size: 0.84rem;
+  overflow-wrap: anywhere;
+}
+
 .answered-question time {
   color: var(--muted);
   font-size: 0.82rem;

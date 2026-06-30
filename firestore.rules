@@ -39,7 +39,8 @@ service cloud.firestore {
 
     match /questions/{questionId} {
       allow create: if request.resource.data.question is string &&
-        request.resource.data.alias is string;
+        request.resource.data.alias is string &&
+        request.resource.data.contact is string;
       allow read: if isAdmin();
       allow update, delete: if isAdmin();
     }

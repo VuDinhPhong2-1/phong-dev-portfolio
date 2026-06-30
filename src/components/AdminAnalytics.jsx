@@ -556,7 +556,10 @@ function AdminAnalytics() {
               questions.map((item) => (
                 <div className="admin-question-card" key={item.id}>
                   <div className="admin-question-meta">
-                    <strong>{item.alias || "Người hỏi ẩn danh"}</strong>
+                    <div>
+                      <strong>{item.alias || "Người hỏi ẩn danh"}</strong>
+                      {item.contact ? <span>{item.contact}</span> : null}
+                    </div>
                     <span className={item.status === "answered" ? "question-status answered" : "question-status"}>
                       {item.status === "answered" ? "Answered" : "Pending"}
                     </span>

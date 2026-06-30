@@ -21,13 +21,30 @@ const cleanText = (value, maxLength) =>
     .replace(/\s+/g, " ")
     .slice(0, maxLength);
 
-export const submitAnonymousQuestion = async ({ alias, question }) => {
+const isValidContact = (value) => {
+  const normalized = String(value || "").trim();
+  const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  const phonePattern = /^[+()\d\s.-]{8,20}$/;
+
+  return emailPattern.test(normalized) || phonePattern.test(normalized);
+};
+
+export const submitAnonymousQuestion = async ({ alias, contact, question }) => {
   if (!canUseQuestions()) {
     throw new Error("Firebase is not configured.");
   }
 
   const cleanAlias = cleanText(alias, 40) || "Nguoi hoi an danh";
+  const cleanContact = cleanText(contact, 80);
   const cleanQuestion = cleanText(question, 600);
+
+  if (!cleanContact) {
+    throw new Error("Ban nhap email hoac so dien thoai de nhan cau tra loi nhe.");
+  }
+
+  if (!isValidContact(cleanContact)) {
+    throw new Error("Email hoac so dien thoai chua dung dinh dang.");
+  }
 
   if (!cleanQuestion) {
     throw new Error("Ban nhap cau hoi truoc nhe.");
@@ -35,6 +52,7 @@ export const submitAnonymousQuestion = async ({ alias, question }) => {
 
   const payload = {
     alias: cleanAlias,
+    contact: cleanContact,
     question: cleanQuestion,
     status: "pending",
     answer: "",

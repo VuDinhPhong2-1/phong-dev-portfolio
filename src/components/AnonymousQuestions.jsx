@@ -18,6 +18,7 @@ const formatQuestionTime = (value) => {
 
 function AnonymousQuestions() {
   const [alias, setAlias] = useState("");
+  const [contact, setContact] = useState("");
   const [question, setQuestion] = useState("");
   const [answeredQuestions, setAnsweredQuestions] = useState([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -35,9 +36,10 @@ function AnonymousQuestions() {
     setErrorMessage("");
 
     try {
-      await submitAnonymousQuestion({ alias, question });
+      await submitAnonymousQuestion({ alias, contact, question });
+      setContact("");
       setQuestion("");
-      setMessage("Câu hỏi đã được gửi. Mình sẽ trả lời trong dashboard và công khai nếu phù hợp.");
+      setMessage("Câu hỏi đã được gửi. Mình sẽ liên hệ qua email hoặc số điện thoại bạn để lại khi có câu trả lời.");
     } catch (error) {
       setErrorMessage(error.message);
     } finally {
@@ -67,6 +69,19 @@ function AnonymousQuestions() {
               onChange={(event) => setAlias(event.target.value)}
               placeholder="Ví dụ: Một bạn đang học React"
               maxLength={40}
+            />
+          </label>
+
+          <label>
+            Email hoặc số điện thoại để nhận câu trả lời
+            <input
+              type="text"
+              value={contact}
+              onChange={(event) => setContact(event.target.value)}
+              placeholder="Ví dụ: ban@example.com hoặc 09xxxxxxxx"
+              maxLength={80}
+              autoComplete="email tel"
+              required
             />
           </label>
 
