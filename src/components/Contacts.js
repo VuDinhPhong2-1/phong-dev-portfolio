@@ -5,7 +5,7 @@ import {
   faPhone,
   faShareNodes,
 } from "@fortawesome/free-solid-svg-icons";
-import { faFacebook, faGithub } from "@fortawesome/free-brands-svg-icons";
+import { faFacebook, faGithub, faTiktok } from "@fortawesome/free-brands-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import CustomHook from "./CustomHook";
 import { localizedContent } from "../data/localizedContent";
@@ -21,6 +21,7 @@ const getContactIcon = (title) => {
   if (normalizedTitle.includes("address") || normalizedTitle.includes("địa")) return faLocationDot;
   if (normalizedTitle.includes("github")) return faGithub;
   if (normalizedTitle.includes("facebook")) return faFacebook;
+  if (normalizedTitle.includes("tiktok")) return faTiktok;
 
   return faShareNodes;
 };

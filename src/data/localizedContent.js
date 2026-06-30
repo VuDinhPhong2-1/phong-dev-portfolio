@@ -373,6 +373,11 @@ export const localizedContent = {
         value: "facebook.com/9110n9",
         href: "https://www.facebook.com/9110n9",
       },
+      {
+        title: "TikTok",
+        value: "tiktok.com/@phong_dwiw",
+        href: "https://www.tiktok.com/@phong_dwiw?lang=vi-VN",
+      },
     ],
   },
   vi: {
@@ -609,6 +614,11 @@ export const localizedContent = {
         title: "Facebook",
         value: "facebook.com/9110n9",
         href: "https://www.facebook.com/9110n9",
+      },
+      {
+        title: "TikTok",
+        value: "tiktok.com/@phong_dwiw",
+        href: "https://www.tiktok.com/@phong_dwiw?lang=vi-VN",
       },
     ],
   },
