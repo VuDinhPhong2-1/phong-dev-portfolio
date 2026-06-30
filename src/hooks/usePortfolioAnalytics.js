@@ -52,7 +52,7 @@ export const usePortfolioAnalytics = () => {
 
     const handleVisibilityChange = () => {
       if (document.visibilityState === "hidden") {
-        stopPortfolioSession();
+        heartbeatPortfolioSession();
       } else {
         heartbeatPortfolioSession();
       }

@@ -12,7 +12,7 @@ const VISITOR_ID_KEY = "portfolio_visitor_id";
 const VISITOR_CREATED_AT_KEY = "portfolio_visitor_created_at";
 const SESSION_ID_KEY = "portfolio_session_id";
 const SESSION_CREATED_AT_KEY = "portfolio_session_created_at";
-const ONLINE_WINDOW_MS = 45 * 1000;
+const ONLINE_WINDOW_MS = 2 * 60 * 1000;
 
 let currentVisitorId = null;
 let currentSessionId = null;
@@ -329,18 +329,33 @@ export const heartbeatPortfolioSession = async () => {
   try {
     const lastSeenAt = serverTimestamp();
     await Promise.all([
-      updateDoc(doc(db, "visitors", currentVisitorId), {
-        lastSeenAt,
-        lastSessionId: currentSessionId,
-        ...getBaseContext(),
-        ...getProfileContext(),
-      }),
-      updateDoc(doc(db, "sessions", currentSessionId), {
-        lastSeenAt,
-        isActive: true,
-        ...getBaseContext(),
-        ...getProfileContext(),
-      }),
+      setDoc(
+        doc(db, "visitors", currentVisitorId),
+        {
+          visitorId: currentVisitorId,
+          firstSeenAt: new Date(currentVisitorCreatedAt || Date.now()),
+          lastSeenAt,
+          lastSessionId: currentSessionId,
+          onlineWindowMs: ONLINE_WINDOW_MS,
+          ...getBaseContext(),
+          ...getProfileContext(),
+        },
+        { merge: true },
+      ),
+      setDoc(
+        doc(db, "sessions", currentSessionId),
+        {
+          sessionId: currentSessionId,
+          visitorId: currentVisitorId,
+          startedAt: new Date(currentSessionCreatedAt || Date.now()),
+          lastSeenAt,
+          isActive: true,
+          onlineWindowMs: ONLINE_WINDOW_MS,
+          ...getBaseContext(),
+          ...getProfileContext(),
+        },
+        { merge: true },
+      ),
     ]);
   } catch (error) {
     if (process.env.NODE_ENV === "development") {

@@ -24,7 +24,7 @@ import { auth, db, isFirebaseConfigured } from "../services/firebase";
 import { isAdminEmail } from "../services/firebase";
 import { answerAnonymousQuestion, subscribeAllQuestions } from "../services/questionService";
 
-const ONLINE_WINDOW_MS = 45 * 1000;
+const ONLINE_WINDOW_MS = 2 * 60 * 1000;
 const LIVE_TICK_MS = 5 * 1000;
 
 const toMillis = (value) => {
@@ -81,6 +81,29 @@ const getDeviceLine = (session) =>
     .filter(Boolean)
     .join(" / ") || "Unknown device";
 
+const getShortId = (value) => {
+  if (!value) return "";
+  const normalized = String(value).replace(/^visitor_/, "").replace(/^session_/, "");
+  return normalized.length > 16 ? `${normalized.slice(0, 16)}...` : normalized;
+};
+
+const getEventSubject = (event) => {
+  if (event.section) return `Section: ${event.section}`;
+  if (event.channel) return `Contact: ${event.channel}`;
+  if (event.project) return `Project: ${event.project}`;
+  if (event.path || event.hash) return `${event.path || "/"}${event.hash || ""}`;
+  return event.title || "Portfolio";
+};
+
+const getEventMetaRows = (event) =>
+  [
+    ["Visitor", event.profileName || event.viewerLabel || getShortId(event.visitorId)],
+    ["Session", getShortId(event.sessionId)],
+    ["Device", getDeviceLine(event)],
+    ["Path", `${event.path || "/"}${event.hash || ""}`],
+    ["Referrer", getHostLabel(event.referrer)],
+  ].filter(([, value]) => value);
+
 function AdminAnalytics() {
   const [authReady, setAuthReady] = useState(false);
   const [user, setUser] = useState(null);
@@ -92,7 +115,6 @@ function AdminAnalytics() {
   const [visitors, setVisitors] = useState([]);
   const [sessions, setSessions] = useState([]);
   const [events, setEvents] = useState([]);
-  const [allEvents, setAllEvents] = useState([]);
   const [questions, setQuestions] = useState([]);
   const [answers, setAnswers] = useState({});
   const [publicFlags, setPublicFlags] = useState({});
@@ -120,14 +142,13 @@ function AdminAnalytics() {
       return undefined;
     }
 
-    const visitorsQuery = collection(db, "visitors");
+    const visitorsQuery = query(collection(db, "visitors"), orderBy("lastSeenAt", "desc"));
     const sessionsQuery = query(
       collection(db, "sessions"),
       orderBy("lastSeenAt", "desc"),
       limit(160),
     );
-    const eventsQuery = query(collection(db, "events"), orderBy("createdAt", "desc"), limit(120));
-    const allEventsQuery = collection(db, "events");
+    const eventsQuery = query(collection(db, "events"), orderBy("createdAt", "desc"));
 
     const unsubscribeVisitors = onSnapshot(visitorsQuery, (snapshot) => {
       setVisitors(snapshot.docs.map((item) => ({ id: item.id, ...item.data() })));
@@ -138,33 +159,53 @@ function AdminAnalytics() {
     const unsubscribeEvents = onSnapshot(eventsQuery, (snapshot) => {
       setEvents(snapshot.docs.map((item) => ({ id: item.id, ...item.data() })));
     }, (error) => setErrorMessage(error.message));
-    const unsubscribeAllEvents = onSnapshot(allEventsQuery, (snapshot) => {
-      setAllEvents(snapshot.docs.map((item) => ({ id: item.id, ...item.data() })));
-    }, (error) => setErrorMessage(error.message));
     const unsubscribeQuestions = subscribeAllQuestions(setQuestions, (error) => setErrorMessage(error.message));
 
     return () => {
       unsubscribeVisitors();
       unsubscribeSessions();
       unsubscribeEvents();
-      unsubscribeAllEvents();
       unsubscribeQuestions();
     };
   }, [user]);
 
   const counts = useMemo(
     () => ({
-      totalPageViews: allEvents.filter((event) => event.type === "page_view").length,
+      totalPageViews: events.filter((event) => event.type === "page_view").length,
       totalVisitors: visitors.length,
-      totalEvents: allEvents.length,
+      totalEvents: events.length,
     }),
-    [allEvents, visitors],
+    [events, visitors],
   );
 
   const activeSessions = useMemo(() => {
     const cutoff = now - ONLINE_WINDOW_MS;
     return sessions.filter((session) => session.isActive !== false && toMillis(session.lastSeenAt) > cutoff);
   }, [now, sessions]);
+
+  const activeSessionByVisitorId = useMemo(
+    () =>
+      activeSessions.reduce((accumulator, session) => {
+        accumulator.set(session.visitorId, session);
+        return accumulator;
+      }, new Map()),
+    [activeSessions],
+  );
+
+  const visitorRows = useMemo(
+    () =>
+      visitors.map((visitor) => {
+        const activeSession = activeSessionByVisitorId.get(visitor.visitorId);
+        return {
+          ...visitor,
+          ...(activeSession || {}),
+          id: visitor.id,
+          isOnline: Boolean(activeSession),
+          lastSeenAt: activeSession?.lastSeenAt || visitor.lastSeenAt,
+        };
+      }),
+    [activeSessionByVisitorId, visitors],
+  );
 
   const referrerRows = useMemo(
     () =>
@@ -348,11 +389,14 @@ function AdminAnalytics() {
 
         <div className="analytics-columns">
           <article className="analytics-panel">
-            <h2>Online visitors</h2>
+            <h2>
+              Online visitors
+              <span className="panel-count">{visitorRows.length} saved</span>
+            </h2>
             <div className="visitor-list">
-              {activeSessions.length ? (
-                activeSessions.map((session) => (
-                  <div className="visitor-row" key={session.id}>
+              {visitorRows.length ? (
+                visitorRows.map((session) => (
+                  <div className={session.isOnline ? "visitor-row is-online" : "visitor-row"} key={session.id}>
                     <div className="visitor-profile">
                       {session.profilePhotoURL ? (
                         <img src={session.profilePhotoURL} alt={session.profileName || "Facebook visitor"} />
@@ -370,34 +414,49 @@ function AdminAnalytics() {
                         </small>
                       </div>
                     </div>
-                    <time>{formatDateTime(session.lastSeenAt)}</time>
+                    <div className="visitor-status">
+                      <span className={session.isOnline ? "status-pill online" : "status-pill"}>
+                        {session.isOnline ? "Online" : "Saved"}
+                      </span>
+                      <time>{formatDateTime(session.lastSeenAt)}</time>
+                    </div>
                   </div>
                 ))
               ) : (
-                <p className="admin-empty">No active visitors in the last 2 minutes.</p>
+                <p className="admin-empty">No saved visitors yet.</p>
               )}
             </div>
           </article>
 
           <article className="analytics-panel">
-            <h2>Recent events</h2>
+            <h2>
+              Recent events
+              <span className="panel-count">{events.length} total</span>
+            </h2>
             <div className="event-list">
-              {events.slice(0, 12).map((event) => (
+              {events.length ? (
+                events.map((event) => (
                   <div className="event-row" key={event.id}>
-                    <div>
-                      <strong>{event.type}</strong>
-                      <span>
-                        {event.profileName ||
-                          event.section ||
-                          event.channel ||
-                          event.project ||
-                          event.path ||
-                          "Portfolio"}
-                      </span>
+                    <div className="event-copy">
+                      <div className="event-title-line">
+                        <strong>{event.type}</strong>
+                        <span>{getEventSubject(event)}</span>
+                      </div>
+                      <dl className="event-meta-grid">
+                        {getEventMetaRows(event).map(([label, value]) => (
+                          <div key={`${event.id}-${label}`}>
+                            <dt>{label}</dt>
+                            <dd>{value}</dd>
+                          </div>
+                        ))}
+                      </dl>
                     </div>
-                  <time>{formatDateTime(event.createdAt)}</time>
-                </div>
-              ))}
+                    <time>{formatDateTime(event.createdAt)}</time>
+                  </div>
+                ))
+              ) : (
+                <p className="admin-empty">No events yet.</p>
+              )}
             </div>
           </article>
         </div>

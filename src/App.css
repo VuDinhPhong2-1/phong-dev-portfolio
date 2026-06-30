@@ -1144,9 +1144,20 @@ section {
 .analytics-panel h2 {
   display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: 10px;
   margin-top: 0;
   font-size: 1.22rem;
+}
+
+.panel-count {
+  flex: 0 0 auto;
+  padding: 5px 9px;
+  border-radius: 999px;
+  background: rgba(13, 110, 253, 0.1);
+  color: var(--primary);
+  font-size: 0.72rem;
+  font-weight: 800;
 }
 
 .visitor-list,
@@ -1167,6 +1178,10 @@ section {
   background: rgba(232, 242, 251, 0.65);
 }
 
+.visitor-row.is-online {
+  background: rgba(25, 135, 84, 0.1);
+}
+
 .visitor-row div,
 .event-row div {
   min-width: 0;
@@ -1178,6 +1193,76 @@ section {
   display: flex !important;
   align-items: center;
   gap: 12px;
+}
+
+.visitor-status {
+  display: grid;
+  justify-items: end;
+  gap: 6px;
+}
+
+.status-pill {
+  padding: 4px 8px;
+  border-radius: 999px;
+  background: rgba(86, 104, 129, 0.12);
+  color: var(--muted);
+  font-size: 0.72rem;
+  font-weight: 800;
+}
+
+.status-pill.online {
+  background: rgba(25, 135, 84, 0.14);
+  color: #157347;
+}
+
+.event-row {
+  align-items: flex-start;
+  background: rgba(232, 242, 251, 0.82);
+}
+
+.event-copy {
+  width: 100%;
+  min-width: 0;
+  display: grid;
+  gap: 10px;
+}
+
+.event-title-line {
+  display: flex !important;
+  align-items: baseline;
+  gap: 10px;
+}
+
+.event-title-line strong {
+  flex: 0 0 auto;
+}
+
+.event-meta-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px 14px;
+  margin: 0;
+}
+
+.event-meta-grid div {
+  min-width: 0;
+  display: grid;
+  gap: 2px;
+}
+
+.event-meta-grid dt {
+  color: var(--muted);
+  font-size: 0.72rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.event-meta-grid dd {
+  min-width: 0;
+  margin: 0;
+  color: var(--text);
+  font-size: 0.84rem;
+  overflow-wrap: anywhere;
 }
 
 .visitor-profile img,
@@ -1728,6 +1813,20 @@ section {
   .answered-question div {
     align-items: flex-start;
     flex-direction: column;
+  }
+
+  .analytics-panel h2,
+  .event-title-line {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .visitor-status {
+    justify-items: start;
+  }
+
+  .event-meta-grid {
+    grid-template-columns: 1fr;
   }
 
   .facebook-consent,
