@@ -730,6 +730,42 @@ section {
   color: var(--primary);
 }
 
+.contact-icon-email {
+  background: rgba(234, 67, 53, 0.12);
+  color: #ea4335;
+}
+
+.contact-icon-phone {
+  background: rgba(52, 168, 83, 0.12);
+  color: #34a853;
+}
+
+.contact-icon-address {
+  background: rgba(234, 67, 53, 0.12);
+  color: #ea4335;
+}
+
+.contact-icon-github {
+  background: rgba(24, 23, 23, 0.1);
+  color: #181717;
+}
+
+.contact-icon-facebook {
+  background: rgba(24, 119, 242, 0.12);
+  color: #1877f2;
+}
+
+.contact-icon-tiktok {
+  background:
+    linear-gradient(135deg, rgba(37, 244, 238, 0.16), rgba(254, 44, 85, 0.14)),
+    rgba(1, 1, 1, 0.06);
+  color: #010101;
+}
+
+.contact-icon-tiktok svg {
+  filter: drop-shadow(-1px 0 0 #25f4ee) drop-shadow(1px 0 0 #fe2c55);
+}
+
 .contact-card p {
   margin: 0 0 12px;
 }

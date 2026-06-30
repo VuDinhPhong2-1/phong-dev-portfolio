@@ -26,6 +26,19 @@ const getContactIcon = (title) => {
   return faShareNodes;
 };
 
+const getContactIconTone = (title) => {
+  const normalizedTitle = title.toLowerCase();
+
+  if (normalizedTitle.includes("email")) return "email";
+  if (normalizedTitle.includes("phone") || normalizedTitle.includes("điện")) return "phone";
+  if (normalizedTitle.includes("address") || normalizedTitle.includes("địa")) return "address";
+  if (normalizedTitle.includes("github")) return "github";
+  if (normalizedTitle.includes("facebook")) return "facebook";
+  if (normalizedTitle.includes("tiktok")) return "tiktok";
+
+  return "default";
+};
+
 function Contacts() {
   const { language } = useLanguage();
   const { contactItems, profile, sections, ui } = localizedContent[language];
@@ -74,7 +87,7 @@ function Contacts() {
               key={item.title}
               ref={(el) => el && animatedRefs.current.push(el)}
             >
-              <div className="contact-icon">
+              <div className={`contact-icon contact-icon-${getContactIconTone(item.title)}`}>
                 <FontAwesomeIcon icon={getContactIcon(item.title)} />
               </div>
               <div>
