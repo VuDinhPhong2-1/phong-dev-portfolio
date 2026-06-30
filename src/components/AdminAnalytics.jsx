@@ -99,6 +99,7 @@ const getEventMetaRows = (event) =>
   [
     ["Visitor", event.profileName || event.viewerLabel || getShortId(event.visitorId)],
     ["Session", getShortId(event.sessionId)],
+    ["IP", event.ipAddress],
     ["Device", getDeviceLine(event)],
     ["Path", `${event.path || "/"}${event.hash || ""}`],
     ["Referrer", getHostLabel(event.referrer)],
@@ -411,6 +412,7 @@ function AdminAnalytics() {
                         <small>
                           {session.viewport || session.screen || "Unknown screen"}
                           {session.timezone ? ` / ${session.timezone}` : ""}
+                          {session.ipAddress ? ` / IP ${session.ipAddress}` : ""}
                         </small>
                       </div>
                     </div>
@@ -511,6 +513,10 @@ function AdminAnalytics() {
                   <strong>{getVisitorDisplayName(session)}</strong>
                   <dl>
                     <div>
+                      <dt>IP</dt>
+                      <dd>{session.ipAddress || "Unknown"}</dd>
+                    </div>
+                    <div>
                       <dt>OS</dt>
                       <dd>{session.operatingSystem || "Unknown"}</dd>
                     </div>
@@ -559,6 +565,7 @@ function AdminAnalytics() {
                     <div>
                       <strong>{item.alias || "Người hỏi ẩn danh"}</strong>
                       {item.contact ? <span>{item.contact}</span> : null}
+                      {item.ipAddress ? <span>IP: {item.ipAddress}</span> : null}
                     </div>
                     <span className={item.status === "answered" ? "question-status answered" : "question-status"}>
                       {item.status === "answered" ? "Answered" : "Pending"}

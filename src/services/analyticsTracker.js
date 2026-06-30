@@ -19,6 +19,8 @@ let currentSessionId = null;
 let currentVisitorCreatedAt = null;
 let currentSessionCreatedAt = null;
 let currentVisitorProfile = null;
+let currentIpContext = null;
+let ipContextPromise = null;
 let started = false;
 
 const canTrack = () =>
@@ -113,6 +115,42 @@ const getNetworkContext = () => {
   };
 };
 
+export const getPortfolioIpContext = async () => {
+  if (currentIpContext) {
+    return currentIpContext;
+  }
+
+  if (ipContextPromise) {
+    return ipContextPromise;
+  }
+
+  if (typeof fetch !== "function") {
+    return {};
+  }
+
+  ipContextPromise = fetch("/api/visitor-ip", {
+    cache: "no-store",
+    headers: {
+      Accept: "application/json",
+    },
+  })
+    .then(async (response) => {
+      if (!response.ok) {
+        return {};
+      }
+
+      const data = await response.json();
+      const ipAddress = String(data.ipAddress || "").trim();
+      currentIpContext = ipAddress ? { ipAddress } : {};
+      return currentIpContext;
+    })
+    .catch(() => ({}));
+
+  return ipContextPromise;
+};
+
+const getCachedIpContext = () => currentIpContext || {};
+
 const getVisitorLabel = () => {
   const params = new URLSearchParams(window.location.search);
   return params.get("viewer") || params.get("ref") || "";
@@ -194,6 +232,7 @@ export const trackPortfolioEvent = async (type, metadata = {}) => {
       sessionId: currentSessionId,
       createdAt: serverTimestamp(),
       ...getBaseContext(),
+      ...getCachedIpContext(),
       ...getProfileContext(),
       ...metadata,
     });
@@ -278,7 +317,11 @@ export const startPortfolioTracking = async () => {
   ensureIds();
   started = true;
 
-  const clientContext = getClientContext();
+  const ipContext = await getPortfolioIpContext();
+  const clientContext = {
+    ...getClientContext(),
+    ...ipContext,
+  };
   const now = serverTimestamp();
 
   try {
@@ -338,6 +381,7 @@ export const heartbeatPortfolioSession = async () => {
           lastSessionId: currentSessionId,
           onlineWindowMs: ONLINE_WINDOW_MS,
           ...getBaseContext(),
+          ...getCachedIpContext(),
           ...getProfileContext(),
         },
         { merge: true },
@@ -352,6 +396,7 @@ export const heartbeatPortfolioSession = async () => {
           isActive: true,
           onlineWindowMs: ONLINE_WINDOW_MS,
           ...getBaseContext(),
+          ...getCachedIpContext(),
           ...getProfileContext(),
         },
         { merge: true },

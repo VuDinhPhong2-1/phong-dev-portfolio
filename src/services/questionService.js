@@ -11,7 +11,7 @@ import {
   updateDoc,
 } from "firebase/firestore";
 import { db, isFirebaseConfigured } from "./firebase";
-import { trackPortfolioEvent } from "./analyticsTracker";
+import { getPortfolioIpContext, trackPortfolioEvent } from "./analyticsTracker";
 
 const canUseQuestions = () => isFirebaseConfigured && db;
 
@@ -50,6 +50,8 @@ export const submitAnonymousQuestion = async ({ alias, contact, question }) => {
     throw new Error("Ban nhap cau hoi truoc nhe.");
   }
 
+  const ipContext = await getPortfolioIpContext();
+
   const payload = {
     alias: cleanAlias,
     contact: cleanContact,
@@ -61,6 +63,7 @@ export const submitAnonymousQuestion = async ({ alias, contact, question }) => {
     answeredAt: null,
     url: window.location.href,
     referrer: document.referrer || "Direct",
+    ...ipContext,
   };
 
   const result = await addDoc(collection(db, "questions"), payload);

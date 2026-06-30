@@ -42,7 +42,7 @@ This portfolio includes an optional Firebase analytics dashboard at `/#/admin-an
 
 When Firebase is configured, the public portfolio records anonymous visitor sessions, page views,
 section views, contact clicks, CV downloads, GitHub clicks, device type, browser, referrer, language,
-screen size, timezone, and online status. The dashboard is private and requires Firebase Auth.
+screen size, timezone, IP address, and online status. The dashboard is private and requires Firebase Auth.
 
 If a visitor comes from Facebook, the portfolio can ask for permission to capture only their
 Facebook display name and avatar. To enable that flow, turn on Facebook as a Firebase Authentication
