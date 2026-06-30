@@ -31,10 +31,7 @@ body {
   margin: 0;
   font-family: "Manrope", sans-serif;
   color: var(--text);
-  background:
-    radial-gradient(circle at top left, rgba(18, 176, 201, 0.18), transparent 34%),
-    radial-gradient(circle at top right, rgba(13, 110, 253, 0.18), transparent 30%),
-    linear-gradient(180deg, #f8fbff 0%, #eef5fb 100%);
+  background: var(--bg);
 }
 
 a {
@@ -293,7 +290,7 @@ section {
 
 .button-primary {
   color: #fff;
-  background: linear-gradient(135deg, var(--primary), var(--accent));
+  background: var(--primary);
   box-shadow: 0 14px 32px rgba(13, 110, 253, 0.2);
 }
 
@@ -325,19 +322,13 @@ section {
   position: relative;
   padding: 18px;
   border-radius: 30px;
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(232, 242, 251, 0.96));
+  background: rgba(255, 255, 255, 0.96);
   border: 1px solid rgba(212, 227, 241, 0.95);
   box-shadow: var(--shadow);
 }
 
 .hero-card::before {
-  content: "";
-  position: absolute;
-  inset: 16px 16px auto auto;
-  width: 120px;
-  height: 120px;
-  border-radius: 50%;
-  background: radial-gradient(circle, rgba(18, 176, 201, 0.18), transparent 68%);
+  content: none;
 }
 
 .portrait {
@@ -611,9 +602,7 @@ section {
 }
 
 .project-card:first-child .project-visual {
-  background:
-    linear-gradient(135deg, rgba(13, 110, 253, 0.18), rgba(18, 176, 201, 0.18)),
-    #f5fbff;
+  background: #edf6ff;
 }
 
 .project-grid {
@@ -624,7 +613,7 @@ section {
 
 .project-visual {
   min-height: 100%;
-  background: linear-gradient(145deg, #dcefff, #f5fbff);
+  background: #e8f2fb;
   padding: 22px;
   border-right: 1px solid var(--line);
 }
@@ -1620,9 +1609,7 @@ section {
 
 .question-form-card {
   padding: 28px;
-  background:
-    linear-gradient(135deg, rgba(13, 110, 253, 0.08), rgba(18, 176, 201, 0.08)),
-    rgba(255, 255, 255, 0.94);
+  background: rgba(255, 255, 255, 0.94);
 }
 
 .question-form-heading {
