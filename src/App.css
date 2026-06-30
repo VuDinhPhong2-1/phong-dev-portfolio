@@ -756,14 +756,8 @@ section {
 }
 
 .contact-icon-tiktok {
-  background:
-    linear-gradient(135deg, rgba(37, 244, 238, 0.16), rgba(254, 44, 85, 0.14)),
-    rgba(1, 1, 1, 0.06);
+  background: rgba(1, 1, 1, 0.08);
   color: #010101;
-}
-
-.contact-icon-tiktok svg {
-  filter: drop-shadow(-1px 0 0 #25f4ee) drop-shadow(1px 0 0 #fe2c55);
 }
 
 .contact-card p {
