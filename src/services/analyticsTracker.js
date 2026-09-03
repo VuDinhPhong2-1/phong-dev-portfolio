@@ -6,80 +6,37 @@ import {
   setDoc,
   updateDoc,
 } from "firebase/firestore";
+
 import { db, isFirebaseConfigured } from "./firebase";
 
 const VISITOR_ID_KEY = "portfolio_visitor_id";
 const VISITOR_CREATED_AT_KEY = "portfolio_visitor_created_at";
+
 const SESSION_ID_KEY = "portfolio_session_id";
 const SESSION_CREATED_AT_KEY = "portfolio_session_created_at";
+
 const ONLINE_WINDOW_MS = 2 * 60 * 1000;
 
 let currentVisitorId = null;
 let currentSessionId = null;
+
 let currentVisitorCreatedAt = null;
 let currentSessionCreatedAt = null;
+
 let currentVisitorProfile = null;
+
+// IP context
 let currentIpContext = null;
 let ipContextPromise = null;
 
-/**
- * Location được lấy từ GPS sau khi người dùng đồng ý.
- *
- * Dữ liệu này sẽ được thêm vào:
- * - visitors
- * - sessions
- * - events
- * - profileConsents
- */
-let cachedLocationContext = {};
-
-/**
- * Lưu location hiện tại vào analytics context.
- */
-export const setCachedLocationContext = (location) => {
-  if (!location) {
-    cachedLocationContext = {};
-    return;
-  }
-
-  cachedLocationContext = {
-    latitude:
-      typeof location.latitude === "number"
-        ? location.latitude
-        : null,
-
-    longitude:
-      typeof location.longitude === "number"
-        ? location.longitude
-        : null,
-
-    accuracy:
-      typeof location.accuracy === "number"
-        ? location.accuracy
-        : null,
-
-    address: location.address || null,
-    road: location.road || null,
-    ward: location.ward || null,
-    district: location.district || null,
-    city: location.city || null,
-    country: location.country || null,
-
-    locationSource: "gps",
-    locationUpdatedAt: new Date().toISOString(),
-  };
-
-  console.log("📍 Cached location context:", cachedLocationContext);
-};
-
-/**
- * Lấy location context hiện tại.
- */
-export const getCachedLocationContext = () => {
-  return cachedLocationContext;
-};
+// LOCATION context
+let currentLocationContext = null;
 
 let started = false;
+
+/* =========================================================
+   TRACKING CHECK
+========================================================= */
 
 const canTrack = () =>
   isFirebaseConfigured &&
@@ -88,12 +45,18 @@ const canTrack = () =>
   typeof localStorage !== "undefined" &&
   !window.location.hash.startsWith("#/admin-analytics");
 
+/* =========================================================
+   ID
+========================================================= */
+
 const createId = (prefix) => {
   if (window.crypto?.randomUUID) {
     return `${prefix}_${window.crypto.randomUUID()}`;
   }
 
-  return `${prefix}_${Date.now()}_${Math.random().toString(36).slice(2, 10)}`;
+  return `${prefix}_${Date.now()}_${Math.random()
+    .toString(36)
+    .slice(2, 10)}`;
 };
 
 const readOrCreateLocalValue = (storage, key, factory) => {
@@ -104,37 +67,67 @@ const readOrCreateLocalValue = (storage, key, factory) => {
   }
 
   const nextValue = factory();
+
   storage.setItem(key, nextValue);
 
   return nextValue;
 };
 
+/* =========================================================
+   BROWSER
+========================================================= */
+
 const getBrowserName = () => {
   const userAgent = navigator.userAgent;
 
   if (userAgent.includes("Edg/")) return "Edge";
-  if (userAgent.includes("OPR/") || userAgent.includes("Opera")) return "Opera";
+
+  if (
+    userAgent.includes("OPR/") ||
+    userAgent.includes("Opera")
+  ) {
+    return "Opera";
+  }
+
   if (userAgent.includes("Chrome/")) return "Chrome";
+
   if (userAgent.includes("Safari/")) return "Safari";
+
   if (userAgent.includes("Firefox/")) return "Firefox";
 
   return "Unknown";
 };
 
+/* =========================================================
+   DEVICE
+========================================================= */
+
 const getDeviceType = () => {
   const userAgent = navigator.userAgent.toLowerCase();
 
-  if (/tablet|ipad/.test(userAgent)) return "Tablet";
-  if (/mobile|iphone|android/.test(userAgent)) return "Mobile";
+  if (/tablet|ipad/.test(userAgent)) {
+    return "Tablet";
+  }
+
+  if (/mobile|iphone|android/.test(userAgent)) {
+    return "Mobile";
+  }
 
   return "Desktop";
 };
+
+/* =========================================================
+   OPERATING SYSTEM
+========================================================= */
 
 const getOperatingSystem = () => {
   const userAgent = navigator.userAgent;
   const platform = navigator.platform || "";
 
-  if (/Windows/i.test(platform) || /Windows/i.test(userAgent)) {
+  if (
+    /Windows/i.test(platform) ||
+    /Windows/i.test(userAgent)
+  ) {
     return "Windows";
   }
 
@@ -157,6 +150,10 @@ const getOperatingSystem = () => {
   return "Unknown";
 };
 
+/* =========================================================
+   DEVICE MODEL
+========================================================= */
+
 const getDeviceModel = () => {
   const userAgentData = navigator.userAgentData;
 
@@ -167,7 +164,7 @@ const getDeviceModel = () => {
   const userAgent = navigator.userAgent;
 
   const androidModel = userAgent.match(
-    /Android\s[\d.]+;\s([^;)]+)/i,
+    /Android\s[\d.]+;\s([^;)]+)/i
   );
 
   if (androidModel?.[1]) {
@@ -176,11 +173,20 @@ const getDeviceModel = () => {
       .trim();
   }
 
-  if (/iPhone/i.test(userAgent)) return "iPhone";
-  if (/iPad/i.test(userAgent)) return "iPad";
+  if (/iPhone/i.test(userAgent)) {
+    return "iPhone";
+  }
+
+  if (/iPad/i.test(userAgent)) {
+    return "iPad";
+  }
 
   return navigator.platform || "Unknown";
 };
+
+/* =========================================================
+   NETWORK
+========================================================= */
 
 const getNetworkContext = () => {
   const connection =
@@ -210,6 +216,10 @@ const getNetworkContext = () => {
   };
 };
 
+/* =========================================================
+   IP
+========================================================= */
+
 export const getPortfolioIpContext = async () => {
   if (currentIpContext) {
     return currentIpContext;
@@ -237,11 +247,13 @@ export const getPortfolioIpContext = async () => {
       const data = await response.json();
 
       const ipAddress = String(
-        data.ipAddress || "",
+        data.ipAddress || ""
       ).trim();
 
       currentIpContext = ipAddress
-        ? { ipAddress }
+        ? {
+            ipAddress,
+          }
         : {};
 
       return currentIpContext;
@@ -255,9 +267,94 @@ const getCachedIpContext = () => {
   return currentIpContext || {};
 };
 
+/* =========================================================
+   LOCATION
+========================================================= */
+
+/**
+ * Gọi hàm này từ App.jsx sau khi người dùng
+ * cho phép lấy vị trí.
+ *
+ * locationData có thể gồm:
+ *
+ * {
+ *   latitude,
+ *   longitude,
+ *   accuracy,
+ *   address,
+ *   road,
+ *   ward,
+ *   district,
+ *   city,
+ *   country
+ * }
+ */
+export const setCachedLocationContext = (locationData) => {
+  if (!locationData) {
+    currentLocationContext = null;
+    return;
+  }
+
+  const latitude = Number(locationData.latitude);
+  const longitude = Number(locationData.longitude);
+  const accuracy = Number(locationData.accuracy);
+
+  currentLocationContext = {
+    latitude: Number.isFinite(latitude)
+      ? latitude
+      : null,
+
+    longitude: Number.isFinite(longitude)
+      ? longitude
+      : null,
+
+    accuracy: Number.isFinite(accuracy)
+      ? accuracy
+      : null,
+
+    address:
+      locationData.address || null,
+
+    road:
+      locationData.road || null,
+
+    ward:
+      locationData.ward || null,
+
+    district:
+      locationData.district || null,
+
+    city:
+      locationData.city || null,
+
+    country:
+      locationData.country || null,
+
+    locationSource:
+      "browser_geolocation",
+
+    locationCapturedAt: serverTimestamp(),
+  };
+
+  if (process.env.NODE_ENV === "development") {
+    console.log(
+      "📍 Cached location context:",
+      currentLocationContext
+    );
+  }
+};
+
+const getCachedLocationContext = () => {
+  return currentLocationContext || {};
+};
+
+/* =========================================================
+   VISITOR LABEL
+========================================================= */
+
 const getVisitorLabel = () => {
   const params = new URLSearchParams(
-    window.location.search,
+    window.location.search
   );
 
   return (
@@ -267,35 +364,59 @@ const getVisitorLabel = () => {
   );
 };
 
+/* =========================================================
+   BASE CONTEXT
+========================================================= */
+
 const getBaseContext = () => ({
   url: window.location.href,
+
   path: window.location.pathname,
+
   hash: window.location.hash,
+
   title: document.title,
-  referrer: document.referrer || "Direct",
+
+  referrer:
+    document.referrer || "Direct",
+
   viewerLabel: getVisitorLabel(),
 });
+
+/* =========================================================
+   CLIENT CONTEXT
+========================================================= */
 
 const getClientContext = () => ({
   ...getBaseContext(),
 
   browser: getBrowserName(),
+
   device: getDeviceType(),
+
   operatingSystem: getOperatingSystem(),
+
   deviceModel: getDeviceModel(),
 
-  platform: navigator.platform || "Unknown",
-  vendor: navigator.vendor || "Unknown",
+  platform:
+    navigator.platform || "Unknown",
 
-  language: navigator.language || "Unknown",
+  vendor:
+    navigator.vendor || "Unknown",
 
-  languages: Array.isArray(navigator.languages)
-    ? navigator.languages.join(", ")
-    : "",
+  language:
+    navigator.language || "Unknown",
 
-  screen: `${window.screen.width}x${window.screen.height}`,
+  languages:
+    Array.isArray(navigator.languages)
+      ? navigator.languages.join(", ")
+      : "",
 
-  viewport: `${window.innerWidth}x${window.innerHeight}`,
+  screen:
+    `${window.screen.width}x${window.screen.height}`,
+
+  viewport:
+    `${window.innerWidth}x${window.innerHeight}`,
 
   colorDepth:
     window.screen.colorDepth || null,
@@ -329,7 +450,17 @@ const getClientContext = () => ({
     navigator.userAgent,
 
   ...getNetworkContext(),
+
+  // QUAN TRỌNG
+  ...getCachedIpContext(),
+
+  // QUAN TRỌNG
+  ...getCachedLocationContext(),
 });
+
+/* =========================================================
+   PROFILE
+========================================================= */
 
 const getProfileContext = () => {
   if (!currentVisitorProfile) {
@@ -348,41 +479,46 @@ const getProfileContext = () => {
   };
 };
 
+/* =========================================================
+   IDS
+========================================================= */
+
 const ensureIds = () => {
   currentVisitorId = readOrCreateLocalValue(
     localStorage,
     VISITOR_ID_KEY,
-    () => createId("visitor"),
+    () => createId("visitor")
   );
 
   currentVisitorCreatedAt =
     readOrCreateLocalValue(
       localStorage,
       VISITOR_CREATED_AT_KEY,
-      () => new Date().toISOString(),
+      () => new Date().toISOString()
     );
 
   currentSessionId =
     readOrCreateLocalValue(
       sessionStorage,
       SESSION_ID_KEY,
-      () => createId("session"),
+      () => createId("session")
     );
 
   currentSessionCreatedAt =
     readOrCreateLocalValue(
       sessionStorage,
       SESSION_CREATED_AT_KEY,
-      () => new Date().toISOString(),
+      () => new Date().toISOString()
     );
 };
 
-/**
- * Track event
- */
+/* =========================================================
+   EVENT
+========================================================= */
+
 export const trackPortfolioEvent = async (
   type,
-  metadata = {},
+  metadata = {}
 ) => {
   if (
     !canTrack() ||
@@ -407,31 +543,32 @@ export const trackPortfolioEvent = async (
         createdAt:
           serverTimestamp(),
 
-        ...getBaseContext(),
-        ...getCachedIpContext(),
-
-        // 📍 LOCATION
-        ...getCachedLocationContext(),
+        ...getClientContext(),
 
         ...getProfileContext(),
+
         ...metadata,
-      },
+      }
     );
   } catch (error) {
-    if (process.env.NODE_ENV === "development") {
+    if (
+      process.env.NODE_ENV ===
+      "development"
+    ) {
       console.warn(
         "Portfolio analytics event failed",
-        error,
+        error
       );
     }
   }
 };
 
-/**
- * Attach visitor profile
- */
+/* =========================================================
+   ATTACH PROFILE
+========================================================= */
+
 export const attachVisitorProfile = async (
-  profile,
+  profile
 ) => {
   if (!canTrack()) {
     return;
@@ -440,9 +577,12 @@ export const attachVisitorProfile = async (
   ensureIds();
 
   const visitorProfile = {
-    authUid: profile.authUid || "",
+    authUid:
+      profile.authUid || "",
+
     provider:
-      profile.provider || "anonymous_alias",
+      profile.provider ||
+      "anonymous_alias",
 
     displayName:
       profile.displayName || "",
@@ -459,11 +599,15 @@ export const attachVisitorProfile = async (
 
   try {
     await Promise.all([
+      /* =========================
+         VISITOR
+      ========================= */
+
       setDoc(
         doc(
           db,
           "visitors",
-          currentVisitorId,
+          currentVisitorId
         ),
         {
           visitorId:
@@ -481,17 +625,22 @@ export const attachVisitorProfile = async (
           profilePhotoURL:
             visitorProfile.photoURL,
 
-          // 📍 LOCATION
-          ...getCachedLocationContext(),
+          ...getClientContext(),
         },
-        { merge: true },
+        {
+          merge: true,
+        }
       ),
+
+      /* =========================
+         SESSION
+      ========================= */
 
       setDoc(
         doc(
           db,
           "sessions",
-          currentSessionId,
+          currentSessionId
         ),
         {
           sessionId:
@@ -512,14 +661,22 @@ export const attachVisitorProfile = async (
           profilePhotoURL:
             visitorProfile.photoURL,
 
-          // 📍 LOCATION
-          ...getCachedLocationContext(),
+          ...getClientContext(),
         },
-        { merge: true },
+        {
+          merge: true,
+        }
       ),
 
+      /* =========================
+         PROFILE CONSENT
+      ========================= */
+
       addDoc(
-        collection(db, "profileConsents"),
+        collection(
+          db,
+          "profileConsents"
+        ),
         {
           visitorId:
             currentVisitorId,
@@ -542,12 +699,8 @@ export const attachVisitorProfile = async (
           createdAt:
             serverTimestamp(),
 
-          ...getBaseContext(),
           ...getClientContext(),
-
-          // 📍 LOCATION
-          ...getCachedLocationContext(),
-        },
+        }
       ),
     ]);
 
@@ -562,44 +715,57 @@ export const attachVisitorProfile = async (
 
         profilePhotoURL:
           visitorProfile.photoURL,
-      },
+      }
     );
   } catch (error) {
-    if (process.env.NODE_ENV === "development") {
+    if (
+      process.env.NODE_ENV ===
+      "development"
+    ) {
       console.warn(
         "Portfolio analytics profile attach failed",
-        error,
+        error
       );
     }
   }
 };
 
-/**
- * Start analytics
- */
+/* =========================================================
+   START TRACKING
+========================================================= */
+
 export const startPortfolioTracking =
   async () => {
-    if (!canTrack() || started) {
+    if (
+      !canTrack() ||
+      started
+    ) {
       return {
-        enabled: canTrack(),
+        enabled:
+          canTrack(),
+
         visitorId:
           currentVisitorId,
+
         sessionId:
           currentSessionId,
       };
     }
 
     ensureIds();
+
     started = true;
 
+    // Lấy IP
     const ipContext =
       await getPortfolioIpContext();
 
+    // Lấy toàn bộ browser + IP + location
     const clientContext = {
       ...getClientContext(),
+
       ...ipContext,
 
-      // 📍 LOCATION
       ...getCachedLocationContext(),
     };
 
@@ -608,11 +774,15 @@ export const startPortfolioTracking =
 
     try {
       await Promise.all([
+        /* =========================
+           VISITOR
+        ========================= */
+
         setDoc(
           doc(
             db,
             "visitors",
-            currentVisitorId,
+            currentVisitorId
           ),
           {
             visitorId:
@@ -620,7 +790,7 @@ export const startPortfolioTracking =
 
             firstSeenAt:
               new Date(
-                currentVisitorCreatedAt,
+                currentVisitorCreatedAt
               ),
 
             lastSeenAt:
@@ -634,14 +804,20 @@ export const startPortfolioTracking =
 
             ...clientContext,
           },
-          { merge: true },
+          {
+            merge: true,
+          }
         ),
+
+        /* =========================
+           SESSION
+        ========================= */
 
         setDoc(
           doc(
             db,
             "sessions",
-            currentSessionId,
+            currentSessionId
           ),
           {
             sessionId:
@@ -652,7 +828,7 @@ export const startPortfolioTracking =
 
             startedAt:
               new Date(
-                currentSessionCreatedAt,
+                currentSessionCreatedAt
               ),
 
             lastSeenAt:
@@ -668,34 +844,43 @@ export const startPortfolioTracking =
 
             ...getProfileContext(),
           },
-          { merge: true },
+          {
+            merge: true,
+          }
         ),
       ]);
 
+      // page_view sẽ tự lấy location
       await trackPortfolioEvent(
-        "page_view",
+        "page_view"
       );
     } catch (error) {
-      if (process.env.NODE_ENV === "development") {
+      if (
+        process.env.NODE_ENV ===
+        "development"
+      ) {
         console.warn(
           "Portfolio analytics start failed",
-          error,
+          error
         );
       }
     }
 
     return {
       enabled: true,
+
       visitorId:
         currentVisitorId,
+
       sessionId:
         currentSessionId,
     };
   };
 
-/**
- * Heartbeat
- */
+/* =========================================================
+   HEARTBEAT
+========================================================= */
+
 export const heartbeatPortfolioSession =
   async () => {
     if (
@@ -711,11 +896,15 @@ export const heartbeatPortfolioSession =
         serverTimestamp();
 
       await Promise.all([
+        /* =========================
+           VISITOR HEARTBEAT
+        ========================= */
+
         setDoc(
           doc(
             db,
             "visitors",
-            currentVisitorId,
+            currentVisitorId
           ),
           {
             visitorId:
@@ -724,7 +913,7 @@ export const heartbeatPortfolioSession =
             firstSeenAt:
               new Date(
                 currentVisitorCreatedAt ||
-                  Date.now(),
+                  Date.now()
               ),
 
             lastSeenAt,
@@ -736,21 +925,27 @@ export const heartbeatPortfolioSession =
               ONLINE_WINDOW_MS,
 
             ...getBaseContext(),
+
             ...getCachedIpContext(),
 
-            // 📍 LOCATION
             ...getCachedLocationContext(),
 
             ...getProfileContext(),
           },
-          { merge: true },
+          {
+            merge: true,
+          }
         ),
+
+        /* =========================
+           SESSION HEARTBEAT
+        ========================= */
 
         setDoc(
           doc(
             db,
             "sessions",
-            currentSessionId,
+            currentSessionId
           ),
           {
             sessionId:
@@ -762,7 +957,7 @@ export const heartbeatPortfolioSession =
             startedAt:
               new Date(
                 currentSessionCreatedAt ||
-                  Date.now(),
+                  Date.now()
               ),
 
             lastSeenAt,
@@ -774,29 +969,35 @@ export const heartbeatPortfolioSession =
               ONLINE_WINDOW_MS,
 
             ...getBaseContext(),
+
             ...getCachedIpContext(),
 
-            // 📍 LOCATION
             ...getCachedLocationContext(),
 
             ...getProfileContext(),
           },
-          { merge: true },
+          {
+            merge: true,
+          }
         ),
       ]);
     } catch (error) {
-      if (process.env.NODE_ENV === "development") {
+      if (
+        process.env.NODE_ENV ===
+        "development"
+      ) {
         console.warn(
           "Portfolio analytics heartbeat failed",
-          error,
+          error
         );
       }
     }
   };
 
-/**
- * Stop session
- */
+/* =========================================================
+   STOP SESSION
+========================================================= */
+
 export const stopPortfolioSession =
   async () => {
     if (
@@ -811,24 +1012,26 @@ export const stopPortfolioSession =
         doc(
           db,
           "sessions",
-          currentSessionId,
+          currentSessionId
         ),
         {
           isActive: false,
+
           endedAt:
             serverTimestamp(),
+
           lastSeenAt:
             serverTimestamp(),
-
-          // 📍 Lưu location lần cuối
-          ...getCachedLocationContext(),
-        },
+        }
       );
     } catch (error) {
-      if (process.env.NODE_ENV === "development") {
+      if (
+        process.env.NODE_ENV ===
+        "development"
+      ) {
         console.warn(
           "Portfolio analytics stop failed",
-          error,
+          error
         );
       }
     }

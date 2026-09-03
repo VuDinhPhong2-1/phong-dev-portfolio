@@ -52,12 +52,8 @@ function PortfolioApp() {
   const handleLocationSuccess = (locationData) => {
     console.log("📍 Location callback:", locationData);
 
-    // Lưu location vào state
     setLocation(locationData);
 
-    // QUAN TRỌNG:
-    // Đưa location vào analytics context
-    // để visitor/session/event có thể lưu vào Firestore.
     setCachedLocationContext(locationData);
 
     if (locationData) {
@@ -65,11 +61,8 @@ function PortfolioApp() {
       console.log("📍 Longitude:", locationData.longitude);
       console.log("📍 Accuracy:", locationData.accuracy);
       console.log("📍 Address:", locationData.address);
-    } else {
-      console.log("📍 Không có thông tin vị trí.");
     }
 
-    // Cho phép vào website
     setLocationConfirmed(true);
   };
 

@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { getLocationWithAddress } from "../services/locationService";
+import "./LocationPermissionModal.css";
 
 export default function LocationPermissionModal({ onSuccess }) {
   const [loading, setLoading] = useState(false);
@@ -16,7 +17,7 @@ export default function LocationPermissionModal({ onSuccess }) {
     } catch (error) {
       console.error("❌ Không lấy được vị trí:", error);
 
-      // Không lấy được GPS vẫn cho vào website
+      // Không lấy được vị trí vẫn cho phép vào website
       onSuccess?.(null);
     } finally {
       setLoading(false);
@@ -24,35 +25,90 @@ export default function LocationPermissionModal({ onSuccess }) {
   };
 
   const handleCancel = () => {
-    // Hủy cũng cho vào website nhưng không lấy vị trí
     onSuccess?.(null);
   };
 
   return (
-    <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 backdrop-blur-sm">
-      <div className="w-[90%] max-w-md rounded-2xl bg-white p-6 shadow-2xl">
-        <h2 className="text-xl font-semibold text-gray-900">
-          Xác nhận bạn muốn vào web?
-        </h2>
+    <div className="location-modal-overlay">
+      <div className="location-modal">
+        <div className="location-modal-icon">
+          <span>📍</span>
+        </div>
 
-        <div className="mt-6 flex justify-end gap-3">
-          <button
-            type="button"
-            onClick={handleCancel}
-            disabled={loading}
-            className="rounded-xl border border-gray-300 px-5 py-2.5 text-gray-700 transition hover:bg-gray-100 disabled:opacity-50"
-          >
-            Hủy
-          </button>
+        <div className="location-modal-content">
+          <span className="location-modal-badge">
+            LOCATION ACCESS
+          </span>
 
-          <button
-            type="button"
-            onClick={handleConfirm}
-            disabled={loading}
-            className="rounded-xl bg-black px-5 py-2.5 text-white transition hover:bg-gray-800 disabled:opacity-50"
-          >
-            {loading ? "Đang xử lý..." : "Xác nhận"}
-          </button>
+          <h2>
+            Xác nhận bạn muốn
+            <br />
+            vào website?
+          </h2>
+
+          <p>
+            Website có thể xin quyền truy cập vị trí hiện tại
+            của bạn để cung cấp trải nghiệm phù hợp hơn.
+          </p>
+
+          <div className="location-info">
+            <div className="location-info-item">
+              <span className="location-info-icon">🌐</span>
+
+              <div>
+                <strong>Vị trí của bạn</strong>
+                <span>
+                  Chỉ sử dụng khi bạn cho phép
+                </span>
+              </div>
+            </div>
+
+            <div className="location-info-item">
+              <span className="location-info-icon">🔒</span>
+
+              <div>
+                <strong>Quyền riêng tư</strong>
+                <span>
+                  Bạn có thể từ chối bất cứ lúc nào
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <div className="location-modal-actions">
+            <button
+              type="button"
+              className="location-btn location-btn-cancel"
+              onClick={handleCancel}
+              disabled={loading}
+            >
+              Hủy
+            </button>
+
+            <button
+              type="button"
+              className="location-btn location-btn-confirm"
+              onClick={handleConfirm}
+              disabled={loading}
+            >
+              {loading ? (
+                <>
+                  <span className="location-spinner" />
+                  Đang lấy vị trí...
+                </>
+              ) : (
+                <>
+                  Cho phép
+                  <span className="location-arrow">→</span>
+                </>
+              )}
+            </button>
+          </div>
+
+          <p className="location-modal-note">
+            Bằng cách tiếp tục, bạn đồng ý cho website
+            truy cập vị trí thiết bị của mình.
+          </p>
         </div>
       </div>
     </div>
