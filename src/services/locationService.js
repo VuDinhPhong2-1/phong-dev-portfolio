@@ -113,17 +113,3 @@ export async function getAddressFromCoordinates(
         return null;
     }
 }
-
-export async function getLocationWithAddress() {
-    const coordinates = await getCurrentLocation();
-
-    const address = await getAddressFromCoordinates(
-        coordinates.latitude,
-        coordinates.longitude
-    );
-
-    return {
-        ...coordinates,
-        ...address,
-    };
-}
