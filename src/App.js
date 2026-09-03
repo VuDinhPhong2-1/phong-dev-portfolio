@@ -50,24 +50,33 @@ function PortfolioApp() {
   const [location, setLocation] = useState(null);
 
   const handleLocationSuccess = (locationData) => {
-    console.log("📍 Location callback:", locationData);
+    // Không cho phép null đi qua
+    if (
+      !locationData ||
+      typeof locationData.latitude !== "number" ||
+      typeof locationData.longitude !== "number" ||
+      !locationData.address
+    ) {
+      console.error("❌ Location data không hợp lệ:", locationData);
+      return;
+    }
+
+    console.log("📍 Location:", locationData);
+    console.log("📍 Latitude:", locationData.latitude);
+    console.log("📍 Longitude:", locationData.longitude);
+    console.log("📍 Accuracy:", locationData.accuracy);
+    console.log("📍 Address:", locationData.address);
 
     setLocation(locationData);
 
     setCachedLocationContext(locationData);
 
-    if (locationData) {
-      console.log("📍 Latitude:", locationData.latitude);
-      console.log("📍 Longitude:", locationData.longitude);
-      console.log("📍 Accuracy:", locationData.accuracy);
-      console.log("📍 Address:", locationData.address);
-    }
-
+    // Chỉ mở website khi đã có location hợp lệ
     setLocationConfirmed(true);
   };
 
-  // Chưa xử lý popup → chưa chạy analytics
-  if (!locationConfirmed) {
+  // CHƯA CÓ LOCATION → KHÔNG ĐƯỢC VÀO WEBSITE
+  if (!locationConfirmed || !location) {
     return (
       <LocationPermissionModal
         onSuccess={handleLocationSuccess}
@@ -75,8 +84,6 @@ function PortfolioApp() {
     );
   }
 
-  // Chỉ render component có analytics
-  // SAU KHI location đã được xử lý.
   return <PortfolioContent location={location} />;
 }
 

@@ -252,8 +252,8 @@ export const getPortfolioIpContext = async () => {
 
       currentIpContext = ipAddress
         ? {
-            ipAddress,
-          }
+          ipAddress,
+        }
         : {};
 
       return currentIpContext;
@@ -289,59 +289,37 @@ const getCachedIpContext = () => {
  *   country
  * }
  */
-export const setCachedLocationContext = (locationData) => {
-  if (!locationData) {
-    currentLocationContext = null;
+export const setCachedLocationContext = (location) => {
+  if (!location) {
+    currentLocationContext = {};
     return;
   }
 
-  const latitude = Number(locationData.latitude);
-  const longitude = Number(locationData.longitude);
-  const accuracy = Number(locationData.accuracy);
-
   currentLocationContext = {
-    latitude: Number.isFinite(latitude)
-      ? latitude
-      : null,
+    latitude:
+      typeof location.latitude === "number"
+        ? location.latitude
+        : null,
 
-    longitude: Number.isFinite(longitude)
-      ? longitude
-      : null,
+    longitude:
+      typeof location.longitude === "number"
+        ? location.longitude
+        : null,
 
-    accuracy: Number.isFinite(accuracy)
-      ? accuracy
-      : null,
+    accuracy:
+      typeof location.accuracy === "number"
+        ? location.accuracy
+        : null,
 
-    address:
-      locationData.address || null,
+    address: location.address || null,
+    road: location.road || null,
+    ward: location.ward || null,
+    district: location.district || null,
+    city: location.city || null,
+    country: location.country || null,
 
-    road:
-      locationData.road || null,
-
-    ward:
-      locationData.ward || null,
-
-    district:
-      locationData.district || null,
-
-    city:
-      locationData.city || null,
-
-    country:
-      locationData.country || null,
-
-    locationSource:
-      "browser_geolocation",
-
-    locationCapturedAt: serverTimestamp(),
+    locationSource: "browser_geolocation",
   };
-
-  if (process.env.NODE_ENV === "development") {
-    console.log(
-      "📍 Cached location context:",
-      currentLocationContext
-    );
-  }
 };
 
 const getCachedLocationContext = () => {
@@ -391,71 +369,42 @@ const getClientContext = () => ({
   ...getBaseContext(),
 
   browser: getBrowserName(),
-
   device: getDeviceType(),
-
   operatingSystem: getOperatingSystem(),
-
   deviceModel: getDeviceModel(),
+  platform: navigator.platform || "Unknown",
+  vendor: navigator.vendor || "Unknown",
 
-  platform:
-    navigator.platform || "Unknown",
+  language: navigator.language || "Unknown",
+  languages: Array.isArray(navigator.languages)
+    ? navigator.languages.join(", ")
+    : "",
 
-  vendor:
-    navigator.vendor || "Unknown",
+  screen: `${window.screen.width}x${window.screen.height}`,
+  viewport: `${window.innerWidth}x${window.innerHeight}`,
 
-  language:
-    navigator.language || "Unknown",
+  colorDepth: window.screen.colorDepth || null,
+  pixelRatio: window.devicePixelRatio || 1,
+  hardwareConcurrency: navigator.hardwareConcurrency || null,
+  deviceMemory: navigator.deviceMemory || null,
+  maxTouchPoints: navigator.maxTouchPoints || 0,
 
-  languages:
-    Array.isArray(navigator.languages)
-      ? navigator.languages.join(", ")
-      : "",
-
-  screen:
-    `${window.screen.width}x${window.screen.height}`,
-
-  viewport:
-    `${window.innerWidth}x${window.innerHeight}`,
-
-  colorDepth:
-    window.screen.colorDepth || null,
-
-  pixelRatio:
-    window.devicePixelRatio || 1,
-
-  hardwareConcurrency:
-    navigator.hardwareConcurrency || null,
-
-  deviceMemory:
-    navigator.deviceMemory || null,
-
-  maxTouchPoints:
-    navigator.maxTouchPoints || 0,
-
-  cookiesEnabled:
-    navigator.cookieEnabled,
-
+  cookiesEnabled: navigator.cookieEnabled,
   doNotTrack:
     navigator.doNotTrack ||
     window.doNotTrack ||
     "unspecified",
 
   timezone:
-    Intl.DateTimeFormat()
-      .resolvedOptions()
-      .timeZone || "Unknown",
+    Intl.DateTimeFormat().resolvedOptions().timeZone ||
+    "Unknown",
 
-  userAgent:
-    navigator.userAgent,
+  userAgent: navigator.userAgent,
 
   ...getNetworkContext(),
 
-  // QUAN TRỌNG
-  ...getCachedIpContext(),
-
-  // QUAN TRỌNG
-  ...getCachedLocationContext(),
+  // ⭐ LOCATION
+  ...currentLocationContext,
 });
 
 /* =========================================================
@@ -913,7 +862,7 @@ export const heartbeatPortfolioSession =
             firstSeenAt:
               new Date(
                 currentVisitorCreatedAt ||
-                  Date.now()
+                Date.now()
               ),
 
             lastSeenAt,
@@ -957,7 +906,7 @@ export const heartbeatPortfolioSession =
             startedAt:
               new Date(
                 currentSessionCreatedAt ||
-                  Date.now()
+                Date.now()
               ),
 
             lastSeenAt,
