@@ -11,11 +11,33 @@ import Experience from "./components/Experience";
 import AdminAnalytics from "./components/AdminAnalytics";
 import AnonymousVisitorPrompt from "./components/AnonymousVisitorPrompt";
 import LegalPage from "./components/LegalPage";
+import LocationPermissionModal from "./components/LocationPermissionModal";
 import { LanguageProvider } from "./context/LanguageContext";
 import { usePortfolioAnalytics } from "./hooks/usePortfolioAnalytics";
 
 function PortfolioApp() {
+  const [locationConfirmed, setLocationConfirmed] = useState(false);
+  const [location, setLocation] = useState(null);
+
   usePortfolioAnalytics();
+
+  const handleLocationSuccess = (locationData) => {
+    setLocation(locationData);
+    setLocationConfirmed(true);
+
+    if (locationData) {
+      console.log("📍 Vị trí:", locationData);
+      console.log("📍 Địa chỉ:", locationData.address);
+    }
+  };
+
+  if (!locationConfirmed) {
+    return (
+      <LocationPermissionModal
+        onSuccess={handleLocationSuccess}
+      />
+    );
+  }
 
   return (
     <main>
@@ -39,7 +61,10 @@ function App() {
     const handleHashChange = () => setHash(window.location.hash);
 
     window.addEventListener("hashchange", handleHashChange);
-    return () => window.removeEventListener("hashchange", handleHashChange);
+
+    return () => {
+      window.removeEventListener("hashchange", handleHashChange);
+    };
   }, []);
 
   const isAdminRoute = hash.startsWith("#/admin-analytics");
@@ -54,7 +79,11 @@ function App() {
     return <LegalPage page="data-deletion" />;
   }
 
-  return <LanguageProvider>{isAdminRoute ? <AdminAnalytics /> : <PortfolioApp />}</LanguageProvider>;
+  return (
+    <LanguageProvider>
+      {isAdminRoute ? <AdminAnalytics /> : <PortfolioApp />}
+    </LanguageProvider>
+  );
 }
 
 export default App;
