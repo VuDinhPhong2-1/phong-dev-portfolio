@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { getLocationWithAddress } from "../services/locationService";
+import "./LocationPermissionModal.css";
 
 export default function LocationPermissionModal({ onSuccess }) {
   const [loading, setLoading] = useState(false);
