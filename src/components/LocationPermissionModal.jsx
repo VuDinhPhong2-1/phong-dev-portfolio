@@ -65,67 +65,62 @@ export default function LocationPermissionModal({ onSuccess }) {
   };
 
   return (
-    <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-slate-950/70 px-4 backdrop-blur-md">
-      <div className="w-full max-w-md overflow-hidden rounded-3xl bg-white shadow-2xl">
-        {/* Header */}
-        <div className="bg-gradient-to-br from-slate-900 to-slate-800 px-7 py-8 text-white">
-          <div className="mb-5 flex h-14 w-14 items-center justify-center rounded-2xl bg-white/10 text-2xl">
+    <div className="location-modal-overlay">
+      <div className="location-modal">
+        <div className="location-modal-content">
+          <div className="location-modal-icon">
             📍
           </div>
 
-          <h2 className="text-2xl font-bold">
-            Cho phép truy cập vị trí
-          </h2>
+          <div className="location-modal-badge">QUYỀN RIÊNG TƯ</div>
 
-          <p className="mt-3 text-sm leading-6 text-slate-300">
+          <h2>Cho phép truy cập vị trí</h2>
+
+          <p>
             Website cần quyền truy cập vị trí của bạn để xác định khu vực
             truy cập và hiển thị thông tin phù hợp.
           </p>
-        </div>
 
-        {/* Body */}
-        <div className="px-7 py-6">
-          <div className="rounded-2xl bg-slate-50 p-4">
-            <div className="flex gap-3">
-              <span className="text-xl">🔐</span>
+          <div className="location-info">
+            <div className="location-info-item">
+              <span className="location-info-icon">🔐</span>
 
               <div>
-                <p className="font-semibold text-slate-900">
-                  Quyền vị trí là bắt buộc
-                </p>
-
-                <p className="mt-1 text-sm leading-5 text-slate-500">
-                  Bạn cần cho phép trình duyệt truy cập vị trí để tiếp tục
-                  vào trang web.
-                </p>
+                <strong>Quyền vị trí là bắt buộc</strong>
+                <span>Bạn cần cho phép trình duyệt truy cập vị trí để tiếp tục.</span>
               </div>
             </div>
           </div>
 
           {error ? (
-            <div className="mt-4 rounded-2xl border border-red-200 bg-red-50 p-4 text-sm leading-5 text-red-700">
-              <div className="font-semibold">Không thể tiếp tục</div>
-              <div className="mt-1">{error}</div>
+            <div className="location-modal-error" role="alert">
+              <strong>Không thể tiếp tục</strong>
+              <span>{error}</span>
             </div>
           ) : null}
 
-          <button
-            type="button"
-            onClick={handleConfirm}
-            disabled={loading}
-            className="mt-6 w-full rounded-2xl bg-slate-900 px-5 py-3.5 font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-50"
-          >
-            {loading ? (
-              <span className="flex items-center justify-center gap-2">
-                <span className="h-5 w-5 animate-spin rounded-full border-2 border-white/30 border-t-white" />
-                Đang xác định vị trí...
-              </span>
-            ) : (
-              "Cho phép truy cập vị trí"
-            )}
-          </button>
+          <div className="location-modal-actions">
+            <button
+              type="button"
+              onClick={handleConfirm}
+              disabled={loading}
+              className="location-btn location-btn-confirm"
+            >
+              {loading ? (
+                <>
+                  <span className="location-spinner" />
+                  Đang xác định vị trí...
+                </>
+              ) : (
+                <>
+                  Cho phép truy cập vị trí
+                  <span className="location-arrow">→</span>
+                </>
+              )}
+            </button>
+          </div>
 
-          <p className="mt-4 text-center text-xs leading-5 text-slate-400">
+          <p className="location-modal-note">
             Nếu bạn chọn “Chặn” trên trình duyệt, hãy mở cài đặt quyền
             Location của website và cho phép lại.
           </p>
