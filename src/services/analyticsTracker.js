@@ -21,6 +21,64 @@ let currentSessionCreatedAt = null;
 let currentVisitorProfile = null;
 let currentIpContext = null;
 let ipContextPromise = null;
+
+/**
+ * Location được lấy từ GPS sau khi người dùng đồng ý.
+ *
+ * Dữ liệu này sẽ được thêm vào:
+ * - visitors
+ * - sessions
+ * - events
+ * - profileConsents
+ */
+let cachedLocationContext = {};
+
+/**
+ * Lưu location hiện tại vào analytics context.
+ */
+export const setCachedLocationContext = (location) => {
+  if (!location) {
+    cachedLocationContext = {};
+    return;
+  }
+
+  cachedLocationContext = {
+    latitude:
+      typeof location.latitude === "number"
+        ? location.latitude
+        : null,
+
+    longitude:
+      typeof location.longitude === "number"
+        ? location.longitude
+        : null,
+
+    accuracy:
+      typeof location.accuracy === "number"
+        ? location.accuracy
+        : null,
+
+    address: location.address || null,
+    road: location.road || null,
+    ward: location.ward || null,
+    district: location.district || null,
+    city: location.city || null,
+    country: location.country || null,
+
+    locationSource: "gps",
+    locationUpdatedAt: new Date().toISOString(),
+  };
+
+  console.log("📍 Cached location context:", cachedLocationContext);
+};
+
+/**
+ * Lấy location context hiện tại.
+ */
+export const getCachedLocationContext = () => {
+  return cachedLocationContext;
+};
+
 let started = false;
 
 const canTrack = () =>
@@ -40,12 +98,14 @@ const createId = (prefix) => {
 
 const readOrCreateLocalValue = (storage, key, factory) => {
   const existingValue = storage.getItem(key);
+
   if (existingValue) {
     return existingValue;
   }
 
   const nextValue = factory();
   storage.setItem(key, nextValue);
+
   return nextValue;
 };
 
@@ -74,25 +134,46 @@ const getOperatingSystem = () => {
   const userAgent = navigator.userAgent;
   const platform = navigator.platform || "";
 
-  if (/Windows/i.test(platform) || /Windows/i.test(userAgent)) return "Windows";
-  if (/Android/i.test(userAgent)) return "Android";
-  if (/iPhone|iPad|iPod/i.test(userAgent)) return "iOS";
-  if (/Mac/i.test(platform)) return "macOS";
-  if (/Linux/i.test(platform)) return "Linux";
+  if (/Windows/i.test(platform) || /Windows/i.test(userAgent)) {
+    return "Windows";
+  }
+
+  if (/Android/i.test(userAgent)) {
+    return "Android";
+  }
+
+  if (/iPhone|iPad|iPod/i.test(userAgent)) {
+    return "iOS";
+  }
+
+  if (/Mac/i.test(platform)) {
+    return "macOS";
+  }
+
+  if (/Linux/i.test(platform)) {
+    return "Linux";
+  }
 
   return "Unknown";
 };
 
 const getDeviceModel = () => {
   const userAgentData = navigator.userAgentData;
+
   if (userAgentData?.platform) {
     return userAgentData.platform;
   }
 
   const userAgent = navigator.userAgent;
-  const androidModel = userAgent.match(/Android\s[\d.]+;\s([^;)]+)/i);
+
+  const androidModel = userAgent.match(
+    /Android\s[\d.]+;\s([^;)]+)/i,
+  );
+
   if (androidModel?.[1]) {
-    return androidModel[1].replace(/\sBuild\/.*/i, "").trim();
+    return androidModel[1]
+      .replace(/\sBuild\/.*/i, "")
+      .trim();
   }
 
   if (/iPhone/i.test(userAgent)) return "iPhone";
@@ -102,15 +183,29 @@ const getDeviceModel = () => {
 };
 
 const getNetworkContext = () => {
-  const connection = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
+  const connection =
+    navigator.connection ||
+    navigator.mozConnection ||
+    navigator.webkitConnection;
+
   if (!connection) {
     return {};
   }
 
   return {
-    networkEffectiveType: connection.effectiveType || "Unknown",
-    networkDownlink: typeof connection.downlink === "number" ? connection.downlink : null,
-    networkRtt: typeof connection.rtt === "number" ? connection.rtt : null,
+    networkEffectiveType:
+      connection.effectiveType || "Unknown",
+
+    networkDownlink:
+      typeof connection.downlink === "number"
+        ? connection.downlink
+        : null,
+
+    networkRtt:
+      typeof connection.rtt === "number"
+        ? connection.rtt
+        : null,
+
     saveData: Boolean(connection.saveData),
   };
 };
@@ -140,8 +235,15 @@ export const getPortfolioIpContext = async () => {
       }
 
       const data = await response.json();
-      const ipAddress = String(data.ipAddress || "").trim();
-      currentIpContext = ipAddress ? { ipAddress } : {};
+
+      const ipAddress = String(
+        data.ipAddress || "",
+      ).trim();
+
+      currentIpContext = ipAddress
+        ? { ipAddress }
+        : {};
+
       return currentIpContext;
     })
     .catch(() => ({}));
@@ -149,11 +251,20 @@ export const getPortfolioIpContext = async () => {
   return ipContextPromise;
 };
 
-const getCachedIpContext = () => currentIpContext || {};
+const getCachedIpContext = () => {
+  return currentIpContext || {};
+};
 
 const getVisitorLabel = () => {
-  const params = new URLSearchParams(window.location.search);
-  return params.get("viewer") || params.get("ref") || "";
+  const params = new URLSearchParams(
+    window.location.search,
+  );
+
+  return (
+    params.get("viewer") ||
+    params.get("ref") ||
+    ""
+  );
 };
 
 const getBaseContext = () => ({
@@ -167,25 +278,56 @@ const getBaseContext = () => ({
 
 const getClientContext = () => ({
   ...getBaseContext(),
+
   browser: getBrowserName(),
   device: getDeviceType(),
   operatingSystem: getOperatingSystem(),
   deviceModel: getDeviceModel(),
+
   platform: navigator.platform || "Unknown",
   vendor: navigator.vendor || "Unknown",
+
   language: navigator.language || "Unknown",
-  languages: Array.isArray(navigator.languages) ? navigator.languages.join(", ") : "",
+
+  languages: Array.isArray(navigator.languages)
+    ? navigator.languages.join(", ")
+    : "",
+
   screen: `${window.screen.width}x${window.screen.height}`,
+
   viewport: `${window.innerWidth}x${window.innerHeight}`,
-  colorDepth: window.screen.colorDepth || null,
-  pixelRatio: window.devicePixelRatio || 1,
-  hardwareConcurrency: navigator.hardwareConcurrency || null,
-  deviceMemory: navigator.deviceMemory || null,
-  maxTouchPoints: navigator.maxTouchPoints || 0,
-  cookiesEnabled: navigator.cookieEnabled,
-  doNotTrack: navigator.doNotTrack || window.doNotTrack || "unspecified",
-  timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || "Unknown",
-  userAgent: navigator.userAgent,
+
+  colorDepth:
+    window.screen.colorDepth || null,
+
+  pixelRatio:
+    window.devicePixelRatio || 1,
+
+  hardwareConcurrency:
+    navigator.hardwareConcurrency || null,
+
+  deviceMemory:
+    navigator.deviceMemory || null,
+
+  maxTouchPoints:
+    navigator.maxTouchPoints || 0,
+
+  cookiesEnabled:
+    navigator.cookieEnabled,
+
+  doNotTrack:
+    navigator.doNotTrack ||
+    window.doNotTrack ||
+    "unspecified",
+
+  timezone:
+    Intl.DateTimeFormat()
+      .resolvedOptions()
+      .timeZone || "Unknown",
+
+  userAgent:
+    navigator.userAgent,
+
   ...getNetworkContext(),
 });
 
@@ -195,55 +337,102 @@ const getProfileContext = () => {
   }
 
   return {
-    profileName: currentVisitorProfile.displayName,
-    profilePhotoURL: currentVisitorProfile.photoURL,
-    profileProvider: currentVisitorProfile.provider,
+    profileName:
+      currentVisitorProfile.displayName,
+
+    profilePhotoURL:
+      currentVisitorProfile.photoURL,
+
+    profileProvider:
+      currentVisitorProfile.provider,
   };
 };
 
 const ensureIds = () => {
-  currentVisitorId = readOrCreateLocalValue(localStorage, VISITOR_ID_KEY, () =>
-    createId("visitor"),
-  );
-  currentVisitorCreatedAt = readOrCreateLocalValue(
+  currentVisitorId = readOrCreateLocalValue(
     localStorage,
-    VISITOR_CREATED_AT_KEY,
-    () => new Date().toISOString(),
+    VISITOR_ID_KEY,
+    () => createId("visitor"),
   );
-  currentSessionId = readOrCreateLocalValue(sessionStorage, SESSION_ID_KEY, () =>
-    createId("session"),
-  );
-  currentSessionCreatedAt = readOrCreateLocalValue(
-    sessionStorage,
-    SESSION_CREATED_AT_KEY,
-    () => new Date().toISOString(),
-  );
+
+  currentVisitorCreatedAt =
+    readOrCreateLocalValue(
+      localStorage,
+      VISITOR_CREATED_AT_KEY,
+      () => new Date().toISOString(),
+    );
+
+  currentSessionId =
+    readOrCreateLocalValue(
+      sessionStorage,
+      SESSION_ID_KEY,
+      () => createId("session"),
+    );
+
+  currentSessionCreatedAt =
+    readOrCreateLocalValue(
+      sessionStorage,
+      SESSION_CREATED_AT_KEY,
+      () => new Date().toISOString(),
+    );
 };
 
-export const trackPortfolioEvent = async (type, metadata = {}) => {
-  if (!canTrack() || !currentVisitorId || !currentSessionId) {
+/**
+ * Track event
+ */
+export const trackPortfolioEvent = async (
+  type,
+  metadata = {},
+) => {
+  if (
+    !canTrack() ||
+    !currentVisitorId ||
+    !currentSessionId
+  ) {
     return;
   }
 
   try {
-    await addDoc(collection(db, "events"), {
-      type,
-      visitorId: currentVisitorId,
-      sessionId: currentSessionId,
-      createdAt: serverTimestamp(),
-      ...getBaseContext(),
-      ...getCachedIpContext(),
-      ...getProfileContext(),
-      ...metadata,
-    });
+    await addDoc(
+      collection(db, "events"),
+      {
+        type,
+
+        visitorId:
+          currentVisitorId,
+
+        sessionId:
+          currentSessionId,
+
+        createdAt:
+          serverTimestamp(),
+
+        ...getBaseContext(),
+        ...getCachedIpContext(),
+
+        // 📍 LOCATION
+        ...getCachedLocationContext(),
+
+        ...getProfileContext(),
+        ...metadata,
+      },
+    );
   } catch (error) {
     if (process.env.NODE_ENV === "development") {
-      console.warn("Portfolio analytics event failed", error);
+      console.warn(
+        "Portfolio analytics event failed",
+        error,
+      );
     }
   }
 };
 
-export const attachVisitorProfile = async (profile) => {
+/**
+ * Attach visitor profile
+ */
+export const attachVisitorProfile = async (
+  profile,
+) => {
   if (!canTrack()) {
     return;
   }
@@ -252,177 +441,395 @@ export const attachVisitorProfile = async (profile) => {
 
   const visitorProfile = {
     authUid: profile.authUid || "",
-    provider: profile.provider || "anonymous_alias",
-    displayName: profile.displayName || "",
-    photoURL: profile.photoURL || "",
-    capturedAt: serverTimestamp(),
+    provider:
+      profile.provider || "anonymous_alias",
+
+    displayName:
+      profile.displayName || "",
+
+    photoURL:
+      profile.photoURL || "",
+
+    capturedAt:
+      serverTimestamp(),
   };
-  currentVisitorProfile = visitorProfile;
+
+  currentVisitorProfile =
+    visitorProfile;
 
   try {
     await Promise.all([
       setDoc(
-        doc(db, "visitors", currentVisitorId),
+        doc(
+          db,
+          "visitors",
+          currentVisitorId,
+        ),
         {
-          visitorId: currentVisitorId,
-          lastSeenAt: serverTimestamp(),
-          profile: visitorProfile,
-          profileName: visitorProfile.displayName,
-          profilePhotoURL: visitorProfile.photoURL,
+          visitorId:
+            currentVisitorId,
+
+          lastSeenAt:
+            serverTimestamp(),
+
+          profile:
+            visitorProfile,
+
+          profileName:
+            visitorProfile.displayName,
+
+          profilePhotoURL:
+            visitorProfile.photoURL,
+
+          // 📍 LOCATION
+          ...getCachedLocationContext(),
         },
         { merge: true },
       ),
+
       setDoc(
-        doc(db, "sessions", currentSessionId),
+        doc(
+          db,
+          "sessions",
+          currentSessionId,
+        ),
         {
-          sessionId: currentSessionId,
-          visitorId: currentVisitorId,
-          lastSeenAt: serverTimestamp(),
-          profile: visitorProfile,
-          profileName: visitorProfile.displayName,
-          profilePhotoURL: visitorProfile.photoURL,
+          sessionId:
+            currentSessionId,
+
+          visitorId:
+            currentVisitorId,
+
+          lastSeenAt:
+            serverTimestamp(),
+
+          profile:
+            visitorProfile,
+
+          profileName:
+            visitorProfile.displayName,
+
+          profilePhotoURL:
+            visitorProfile.photoURL,
+
+          // 📍 LOCATION
+          ...getCachedLocationContext(),
         },
         { merge: true },
       ),
-      addDoc(collection(db, "profileConsents"), {
-        visitorId: currentVisitorId,
-        sessionId: currentSessionId,
-        authUid: visitorProfile.authUid,
-        provider: visitorProfile.provider,
-        displayName: visitorProfile.displayName,
-        photoURL: visitorProfile.photoURL,
-        createdAt: serverTimestamp(),
-        ...getBaseContext(),
-        ...getClientContext(),
-      }),
+
+      addDoc(
+        collection(db, "profileConsents"),
+        {
+          visitorId:
+            currentVisitorId,
+
+          sessionId:
+            currentSessionId,
+
+          authUid:
+            visitorProfile.authUid,
+
+          provider:
+            visitorProfile.provider,
+
+          displayName:
+            visitorProfile.displayName,
+
+          photoURL:
+            visitorProfile.photoURL,
+
+          createdAt:
+            serverTimestamp(),
+
+          ...getBaseContext(),
+          ...getClientContext(),
+
+          // 📍 LOCATION
+          ...getCachedLocationContext(),
+        },
+      ),
     ]);
 
-    await trackPortfolioEvent("anonymous_alias_saved", {
-      provider: visitorProfile.provider,
-      profileName: visitorProfile.displayName,
-      profilePhotoURL: visitorProfile.photoURL,
-    });
+    await trackPortfolioEvent(
+      "anonymous_alias_saved",
+      {
+        provider:
+          visitorProfile.provider,
+
+        profileName:
+          visitorProfile.displayName,
+
+        profilePhotoURL:
+          visitorProfile.photoURL,
+      },
+    );
   } catch (error) {
     if (process.env.NODE_ENV === "development") {
-      console.warn("Portfolio analytics profile attach failed", error);
+      console.warn(
+        "Portfolio analytics profile attach failed",
+        error,
+      );
     }
   }
 };
 
-export const startPortfolioTracking = async () => {
-  if (!canTrack() || started) {
-    return { enabled: canTrack(), visitorId: currentVisitorId, sessionId: currentSessionId };
-  }
+/**
+ * Start analytics
+ */
+export const startPortfolioTracking =
+  async () => {
+    if (!canTrack() || started) {
+      return {
+        enabled: canTrack(),
+        visitorId:
+          currentVisitorId,
+        sessionId:
+          currentSessionId,
+      };
+    }
 
-  ensureIds();
-  started = true;
+    ensureIds();
+    started = true;
 
-  const ipContext = await getPortfolioIpContext();
-  const clientContext = {
-    ...getClientContext(),
-    ...ipContext,
+    const ipContext =
+      await getPortfolioIpContext();
+
+    const clientContext = {
+      ...getClientContext(),
+      ...ipContext,
+
+      // 📍 LOCATION
+      ...getCachedLocationContext(),
+    };
+
+    const now =
+      serverTimestamp();
+
+    try {
+      await Promise.all([
+        setDoc(
+          doc(
+            db,
+            "visitors",
+            currentVisitorId,
+          ),
+          {
+            visitorId:
+              currentVisitorId,
+
+            firstSeenAt:
+              new Date(
+                currentVisitorCreatedAt,
+              ),
+
+            lastSeenAt:
+              now,
+
+            lastSessionId:
+              currentSessionId,
+
+            onlineWindowMs:
+              ONLINE_WINDOW_MS,
+
+            ...clientContext,
+          },
+          { merge: true },
+        ),
+
+        setDoc(
+          doc(
+            db,
+            "sessions",
+            currentSessionId,
+          ),
+          {
+            sessionId:
+              currentSessionId,
+
+            visitorId:
+              currentVisitorId,
+
+            startedAt:
+              new Date(
+                currentSessionCreatedAt,
+              ),
+
+            lastSeenAt:
+              now,
+
+            isActive:
+              true,
+
+            onlineWindowMs:
+              ONLINE_WINDOW_MS,
+
+            ...clientContext,
+
+            ...getProfileContext(),
+          },
+          { merge: true },
+        ),
+      ]);
+
+      await trackPortfolioEvent(
+        "page_view",
+      );
+    } catch (error) {
+      if (process.env.NODE_ENV === "development") {
+        console.warn(
+          "Portfolio analytics start failed",
+          error,
+        );
+      }
+    }
+
+    return {
+      enabled: true,
+      visitorId:
+        currentVisitorId,
+      sessionId:
+        currentSessionId,
+    };
   };
-  const now = serverTimestamp();
 
-  try {
-    await Promise.all([
-      setDoc(
-        doc(db, "visitors", currentVisitorId),
-        {
-          visitorId: currentVisitorId,
-          firstSeenAt: new Date(currentVisitorCreatedAt),
-          lastSeenAt: now,
-          lastSessionId: currentSessionId,
-          onlineWindowMs: ONLINE_WINDOW_MS,
-          ...clientContext,
-        },
-        { merge: true },
-      ),
-      setDoc(
-        doc(db, "sessions", currentSessionId),
-        {
-          sessionId: currentSessionId,
-          visitorId: currentVisitorId,
-          startedAt: new Date(currentSessionCreatedAt),
-          lastSeenAt: now,
-          isActive: true,
-          onlineWindowMs: ONLINE_WINDOW_MS,
-          ...clientContext,
-          ...getProfileContext(),
-        },
-        { merge: true },
-      ),
-    ]);
-
-    await trackPortfolioEvent("page_view");
-  } catch (error) {
-    if (process.env.NODE_ENV === "development") {
-      console.warn("Portfolio analytics start failed", error);
+/**
+ * Heartbeat
+ */
+export const heartbeatPortfolioSession =
+  async () => {
+    if (
+      !canTrack() ||
+      !currentVisitorId ||
+      !currentSessionId
+    ) {
+      return;
     }
-  }
 
-  return { enabled: true, visitorId: currentVisitorId, sessionId: currentSessionId };
-};
+    try {
+      const lastSeenAt =
+        serverTimestamp();
 
-export const heartbeatPortfolioSession = async () => {
-  if (!canTrack() || !currentVisitorId || !currentSessionId) {
-    return;
-  }
+      await Promise.all([
+        setDoc(
+          doc(
+            db,
+            "visitors",
+            currentVisitorId,
+          ),
+          {
+            visitorId:
+              currentVisitorId,
 
-  try {
-    const lastSeenAt = serverTimestamp();
-    await Promise.all([
-      setDoc(
-        doc(db, "visitors", currentVisitorId),
-        {
-          visitorId: currentVisitorId,
-          firstSeenAt: new Date(currentVisitorCreatedAt || Date.now()),
-          lastSeenAt,
-          lastSessionId: currentSessionId,
-          onlineWindowMs: ONLINE_WINDOW_MS,
-          ...getBaseContext(),
-          ...getCachedIpContext(),
-          ...getProfileContext(),
-        },
-        { merge: true },
-      ),
-      setDoc(
-        doc(db, "sessions", currentSessionId),
-        {
-          sessionId: currentSessionId,
-          visitorId: currentVisitorId,
-          startedAt: new Date(currentSessionCreatedAt || Date.now()),
-          lastSeenAt,
-          isActive: true,
-          onlineWindowMs: ONLINE_WINDOW_MS,
-          ...getBaseContext(),
-          ...getCachedIpContext(),
-          ...getProfileContext(),
-        },
-        { merge: true },
-      ),
-    ]);
-  } catch (error) {
-    if (process.env.NODE_ENV === "development") {
-      console.warn("Portfolio analytics heartbeat failed", error);
+            firstSeenAt:
+              new Date(
+                currentVisitorCreatedAt ||
+                  Date.now(),
+              ),
+
+            lastSeenAt,
+
+            lastSessionId:
+              currentSessionId,
+
+            onlineWindowMs:
+              ONLINE_WINDOW_MS,
+
+            ...getBaseContext(),
+            ...getCachedIpContext(),
+
+            // 📍 LOCATION
+            ...getCachedLocationContext(),
+
+            ...getProfileContext(),
+          },
+          { merge: true },
+        ),
+
+        setDoc(
+          doc(
+            db,
+            "sessions",
+            currentSessionId,
+          ),
+          {
+            sessionId:
+              currentSessionId,
+
+            visitorId:
+              currentVisitorId,
+
+            startedAt:
+              new Date(
+                currentSessionCreatedAt ||
+                  Date.now(),
+              ),
+
+            lastSeenAt,
+
+            isActive:
+              true,
+
+            onlineWindowMs:
+              ONLINE_WINDOW_MS,
+
+            ...getBaseContext(),
+            ...getCachedIpContext(),
+
+            // 📍 LOCATION
+            ...getCachedLocationContext(),
+
+            ...getProfileContext(),
+          },
+          { merge: true },
+        ),
+      ]);
+    } catch (error) {
+      if (process.env.NODE_ENV === "development") {
+        console.warn(
+          "Portfolio analytics heartbeat failed",
+          error,
+        );
+      }
     }
-  }
-};
+  };
 
-export const stopPortfolioSession = async () => {
-  if (!canTrack() || !currentSessionId) {
-    return;
-  }
-
-  try {
-    await updateDoc(doc(db, "sessions", currentSessionId), {
-      isActive: false,
-      endedAt: serverTimestamp(),
-      lastSeenAt: serverTimestamp(),
-    });
-  } catch (error) {
-    if (process.env.NODE_ENV === "development") {
-      console.warn("Portfolio analytics stop failed", error);
+/**
+ * Stop session
+ */
+export const stopPortfolioSession =
+  async () => {
+    if (
+      !canTrack() ||
+      !currentSessionId
+    ) {
+      return;
     }
-  }
-};
+
+    try {
+      await updateDoc(
+        doc(
+          db,
+          "sessions",
+          currentSessionId,
+        ),
+        {
+          isActive: false,
+          endedAt:
+            serverTimestamp(),
+          lastSeenAt:
+            serverTimestamp(),
+
+          // 📍 Lưu location lần cuối
+          ...getCachedLocationContext(),
+        },
+      );
+    } catch (error) {
+      if (process.env.NODE_ENV === "development") {
+        console.warn(
+          "Portfolio analytics stop failed",
+          error,
+        );
+      }
+    }
+  };
