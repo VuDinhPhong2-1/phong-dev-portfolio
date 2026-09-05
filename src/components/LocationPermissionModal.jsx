@@ -13,16 +13,6 @@ export default function LocationPermissionModal({ onSuccess }) {
 
     try {
       const location = await getLocationWithAddress();
-
-      console.log("📍 LOCATION SUCCESS");
-      console.log("Latitude:", location.latitude);
-      console.log("Longitude:", location.longitude);
-      console.log("Accuracy:", location.accuracy);
-      console.log("Address:", location.address);
-      console.log("District:", location.district);
-      console.log("City:", location.city);
-      console.log("Country:", location.country);
-
       /**
        * CHỈ gọi onSuccess khi đã có đầy đủ location.
        */

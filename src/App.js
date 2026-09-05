@@ -61,12 +61,6 @@ function PortfolioApp() {
       return;
     }
 
-    console.log("📍 Location:", locationData);
-    console.log("📍 Latitude:", locationData.latitude);
-    console.log("📍 Longitude:", locationData.longitude);
-    console.log("📍 Accuracy:", locationData.accuracy);
-    console.log("📍 Address:", locationData.address);
-
     setLocation(locationData);
 
     setCachedLocationContext(locationData);
