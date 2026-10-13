@@ -15,29 +15,49 @@ function About() {
   CustomHook(scrollTab, animatedRefs);
 
   return (
-    <section ref={scrollTab} data-name="about">
+    <section ref={scrollTab} className="about-section magic-about" data-name="about">
       <div className="section-heading animation" ref={(el) => el && animatedRefs.current.push(el)}>
-        <div className="eyebrow">{sections.about.eyebrow}</div>
-        <h2>{sections.about.title}</h2>
-        <p>{sections.about.description}</p>
+        <div className="eyebrow magic-eyebrow">
+          <span className="eyebrow-sparkle">✦</span>
+          {sections.about.eyebrow}
+          <span className="eyebrow-sparkle">✦</span>
+        </div>
+        <h2 className="magic-heading">{sections.about.title}</h2>
+        <p className="magic-subheading">{sections.about.description}</p>
       </div>
 
       <div className="about-grid">
-        <div className="about-copy animation" ref={(el) => el && animatedRefs.current.push(el)}>
-          {profile.about.map((paragraph) => (
-            <p key={paragraph}>{paragraph}</p>
+        <div className="about-copy magic-glass-card animation" ref={(el) => el && animatedRefs.current.push(el)}>
+          <div className="glass-ambient-glow" />
+          <div className="about-copy-header">
+            <span className="terminal-dot red" />
+            <span className="terminal-dot yellow" />
+            <span className="terminal-dot green" />
+            <span className="terminal-title">~/phong-profile.story</span>
+          </div>
+          {profile.about.map((paragraph, idx) => (
+            <p key={paragraph} className={`paragraph-fade-${idx}`}>
+              {paragraph}
+            </p>
           ))}
+          <div className="about-story-pills">
+            <span className="story-pill">✦ MOS Master Certified</span>
+            <span className="story-pill">✦ Clean Code Mindset</span>
+            <span className="story-pill">✦ Agile & Creative</span>
+          </div>
         </div>
 
-        <div className="about-focus animation" ref={(el) => el && animatedRefs.current.push(el)}>
-          <h3>{sections.about.focusTitle}</h3>
+        <div className="about-focus magic-glass-card animation" ref={(el) => el && animatedRefs.current.push(el)}>
+          <div className="glass-ambient-glow" />
+          <h3 className="magic-focus-title">{sections.about.focusTitle}</h3>
           <div className="focus-list">
             {profile.focusAreas.map((item, index) => (
-              <div className="focus-item" key={item.title}>
-                <div className="icon-wrap">
+              <div className="focus-item magic-focus-item" key={item.title}>
+                <div className={`icon-wrap magic-icon-wrap tone-${index % 3}`}>
                   <FontAwesomeIcon icon={icons[index % icons.length]} />
+                  <div className="icon-glow-ring" />
                 </div>
-                <div>
+                <div className="focus-content">
                   <strong>{item.title}</strong>
                   <p>{item.description}</p>
                 </div>

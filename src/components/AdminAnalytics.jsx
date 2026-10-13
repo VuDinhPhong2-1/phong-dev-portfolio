@@ -1,1353 +1,298 @@
-import React, { useEffect, useMemo, useState } from "react";
-import {
-  faArrowRightFromBracket,
-  faChartLine,
-  faDesktop,
-  faEye,
-  faGlobe,
-  faLock,
-  faMapMarkerAlt,
-  faMicrochip,
-  faReply,
-  faSignal,
-  faUsers,
-} from "@fortawesome/free-solid-svg-icons";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
-  onAuthStateChanged,
-  signInWithEmailAndPassword,
-  signOut,
-} from "firebase/auth";
+  faChartLine,
+  faCogs,
+  faLightbulb,
+  faMicrochip,
+  faReply,
+} from "@fortawesome/free-solid-svg-icons";
+import { onAuthStateChanged, signOut } from "firebase/auth";
+import { collection, limit, onSnapshot, orderBy, query } from "firebase/firestore";
+import { auth, db, isAdminEmail, isFirebaseConfigured } from "../services/firebase";
 import {
-  collection,
-  limit,
-  onSnapshot,
-  orderBy,
-  query,
-} from "firebase/firestore";
-import { auth, db, isFirebaseConfigured } from "../services/firebase";
-import { isAdminEmail } from "../services/firebase";
-import {
-  answerAnonymousQuestion,
   subscribeAllQuestions,
+  subscribeNglPrompts,
+  subscribeSenderNotes,
 } from "../services/questionService";
+import { playNotificationChime, sendBrowserNotification } from "../services/nglNotificationService";
+import "../admin.css";
+
+import AdminTopbar from "./admin/AdminTopbar";
+import AdminLoginView from "./admin/AdminLoginView";
+import AdminQuestionsTab from "./admin/AdminQuestionsTab";
+import AdminPromptsTab from "./admin/AdminPromptsTab";
+import AdminLiveDevicesTab from "./admin/AdminLiveDevicesTab";
+import AdminAnalyticsTab from "./admin/AdminAnalyticsTab";
+import AdminSettingsTab from "./admin/AdminSettingsTab";
+import NglStoryModal from "./NglStoryModal";
 
 const ONLINE_WINDOW_MS = 2 * 60 * 1000;
-const LIVE_TICK_MS = 5 * 1000;
 
-const toMillis = (value) => {
-  if (!value) return 0;
-
-  if (typeof value.toMillis === "function") {
-    return value.toMillis();
-  }
-
-  if (value instanceof Date) {
-    return value.getTime();
-  }
-
-  if (typeof value === "string") {
-    return new Date(value).getTime();
-  }
-
-  return 0;
-};
-
-const formatDateTime = (value) => {
-  const millis = toMillis(value);
-
-  if (!millis) {
-    return "Unknown";
-  }
-
-  return new Intl.DateTimeFormat("en", {
-    dateStyle: "medium",
-    timeStyle: "short",
-  }).format(new Date(millis));
-};
-
-const getHostLabel = (referrer) => {
-  if (!referrer || referrer === "Direct") {
-    return "Direct";
-  }
-
-  try {
-    return new URL(referrer).hostname.replace("www.", "");
-  } catch {
-    return referrer;
-  }
-};
-
-const countBy = (items, key, fallback = "Unknown") =>
-  items.reduce((accumulator, item) => {
-    const value = item[key] || fallback;
-
-    accumulator[value] = (accumulator[value] || 0) + 1;
-
-    return accumulator;
-  }, {});
-
-const toSortedEntries = (counts) =>
-  Object.entries(counts).sort(
-    (first, second) => second[1] - first[1],
-  );
-
-const getVisitorDisplayName = (session) =>
-  session.profileName ||
-  session.viewerLabel ||
-  session.visitorId ||
-  "Anonymous visitor";
-
-const getVisitorInitial = (session) =>
-  getVisitorDisplayName(session).charAt(0).toUpperCase();
-
-const getDeviceLine = (session) =>
-  [
-    session.device,
-    session.deviceModel &&
-    session.deviceModel !== session.device
-      ? session.deviceModel
-      : "",
-    session.operatingSystem,
-    session.browser,
-  ]
-    .filter(Boolean)
-    .join(" / ") || "Unknown device";
-
-const getShortId = (value) => {
-  if (!value) return "";
-
-  const normalized = String(value)
-    .replace(/^visitor_/, "")
-    .replace(/^session_/, "");
-
-  return normalized.length > 16
-    ? `${normalized.slice(0, 16)}...`
-    : normalized;
-};
-
-/**
- * Build a readable address from reverse-geocoding fields.
- */
-const getLocationText = (session) => {
-  if (session.address) {
-    return session.address;
-  }
-
-  const parts = [
-    session.road,
-    session.ward,
-    session.district,
-    session.city,
-    session.country,
-  ].filter(Boolean);
-
-  return parts.length ? parts.join(", ") : "Location unavailable";
-};
-
-/**
- * Check whether valid GPS coordinates exist.
- */
-const hasCoordinates = (session) => {
-  const latitude = Number(session?.latitude);
-  const longitude = Number(session?.longitude);
-
-  return (
-    Number.isFinite(latitude) &&
-    Number.isFinite(longitude)
-  );
-};
-
-/**
- * Google Maps URL.
- */
-const getGoogleMapsUrl = (session) => {
-  if (!hasCoordinates(session)) {
-    return null;
-  }
-
-  return `https://www.google.com/maps?q=${session.latitude},${session.longitude}`;
-};
-
-/**
- * Format GPS accuracy.
- */
-const formatAccuracy = (accuracy) => {
-  if (
-    accuracy === null ||
-    accuracy === undefined ||
-    accuracy === ""
-  ) {
-    return "Unknown";
-  }
-
-  const value = Number(accuracy);
-
-  if (!Number.isFinite(value)) {
-    return "Unknown";
-  }
-
-  return `±${Math.round(value)} m`;
-};
-
-const getEventSubject = (event) => {
-  if (event.section) {
-    return `Section: ${event.section}`;
-  }
-
-  if (event.channel) {
-    return `Contact: ${event.channel}`;
-  }
-
-  if (event.project) {
-    return `Project: ${event.project}`;
-  }
-
-  if (event.path || event.hash) {
-    return `${event.path || "/"}${event.hash || ""}`;
-  }
-
-  return event.title || "Portfolio";
-};
-
-const getEventMetaRows = (event) =>
-  [
-    [
-      "Visitor",
-      event.profileName ||
-        event.viewerLabel ||
-        getShortId(event.visitorId),
-    ],
-    ["Session", getShortId(event.sessionId)],
-    ["IP", event.ipAddress],
-    ["Device", getDeviceLine(event)],
-    ["Path", `${event.path || "/"}${event.hash || ""}`],
-    ["Referrer", getHostLabel(event.referrer)],
-    ["Address", getLocationText(event)],
-    [
-      "Coordinates",
-      hasCoordinates(event)
-        ? `${event.latitude}, ${event.longitude}`
-        : null,
-    ],
-    [
-      "GPS accuracy",
-      event.accuracy !== undefined
-        ? formatAccuracy(event.accuracy)
-        : null,
-    ],
-  ].filter(([, value]) => value);
-
-function AdminAnalytics() {
-  const [authReady, setAuthReady] = useState(false);
+export default function AdminAnalytics() {
   const [user, setUser] = useState(null);
+  const [authReady, setAuthReady] = useState(false);
 
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [errorMessage, setErrorMessage] = useState("");
-
-  const [now, setNow] = useState(Date.now());
-
-  const [visitors, setVisitors] = useState([]);
+  const [activeTab, setActiveTab] = useState("questions");
+  const [questions, setQuestions] = useState([]);
+  const [prompts, setPrompts] = useState([]);
+  const [senderNotes, setSenderNotes] = useState({});
   const [sessions, setSessions] = useState([]);
   const [events, setEvents] = useState([]);
+  const [visitors, setVisitors] = useState([]);
 
-  const [questions, setQuestions] = useState([]);
-  const [answers, setAnswers] = useState({});
-  const [publicFlags, setPublicFlags] = useState({});
+  const [currentTime, setCurrentTime] = useState(new Date());
+  const [toasts, setToasts] = useState([]);
+  const [storyItem, setStoryItem] = useState(null);
 
-  const isAdminUser = isAdminEmail(user?.email);
+  const knownQuestionIdsRef = useRef(new Set());
+  const isInitialLoadRef = useRef(true);
 
-  /**
-   * Firebase auth listener.
-   */
+  // Live Clock
+  useEffect(() => {
+    const timer = setInterval(() => setCurrentTime(new Date()), 1000);
+    return () => clearInterval(timer);
+  }, []);
+
+  // Toast notification system
+  const showToast = (message) => {
+    const id = Date.now() + Math.random();
+    setToasts((prev) => [...prev, { id, message }]);
+    setTimeout(() => {
+      setToasts((prev) => prev.filter((t) => t.id !== id));
+    }, 3800);
+  };
+
+  // Auth listener
   useEffect(() => {
     if (!isFirebaseConfigured || !auth) {
       setAuthReady(true);
-      return undefined;
+      return;
     }
-
-    return onAuthStateChanged(auth, (nextUser) => {
-      setUser(nextUser);
+    const unsub = onAuthStateChanged(auth, (u) => {
+      setUser(u);
       setAuthReady(true);
     });
+    return () => unsub();
   }, []);
 
-  /**
-   * Live dashboard clock.
-   */
+  const isAdminUser = Boolean(user && isAdminEmail(user.email));
+
+  // Realtime Subscriptions
   useEffect(() => {
-    const timer = window.setInterval(() => {
-      setNow(Date.now());
-    }, LIVE_TICK_MS);
+    if (!isAdminUser || !db) return;
 
-    return () => {
-      window.clearInterval(timer);
-    };
-  }, []);
+    // 1. Questions
+    const unsubQuestions = subscribeAllQuestions((list) => {
+      setQuestions(list || []);
 
-  /**
-   * Firestore realtime listeners.
-   */
-  useEffect(() => {
-    if (!user || !isAdminEmail(user.email) || !db) {
-      return undefined;
-    }
+      if (!isInitialLoadRef.current) {
+        const newItems = (list || []).filter((q) => !knownQuestionIdsRef.current.has(q.id));
+        if (newItems.length > 0) {
+          playNotificationChime();
+          sendBrowserNotification("💌 Có tin nhắn ẩn danh mới!", {
+            body: `${newItems[0].alias}: "${newItems[0].question.slice(0, 60)}..."`,
+          });
+          showToast(`💌 Tin nhắn mới từ ${newItems[0].alias}!`);
+        }
+      }
 
-    const visitorsQuery = query(
-      collection(db, "visitors"),
-      orderBy("lastSeenAt", "desc"),
-    );
+      (list || []).forEach((q) => knownQuestionIdsRef.current.add(q.id));
+      isInitialLoadRef.current = false;
+    });
 
+    // 2. Sender Notes
+    const unsubNotes = subscribeSenderNotes((map) => {
+      setSenderNotes(map || {});
+    });
+
+    // 3. Dynamic Prompts
+    const unsubPrompts = subscribeNglPrompts((list) => {
+      setPrompts(list || []);
+    });
+
+    // 4. Sessions
     const sessionsQuery = query(
       collection(db, "sessions"),
       orderBy("lastSeenAt", "desc"),
-      limit(160),
+      limit(60)
     );
+    const unsubSessions = onSnapshot(sessionsQuery, (snap) => {
+      setSessions(snap.docs.map((d) => ({ id: d.id, ...d.data() })));
+    });
 
+    // 5. Visitors
+    const visitorsQuery = query(
+      collection(db, "visitors"),
+      orderBy("lastSeenAt", "desc"),
+      limit(60)
+    );
+    const unsubVisitors = onSnapshot(visitorsQuery, (snap) => {
+      setVisitors(snap.docs.map((d) => ({ id: d.id, ...d.data() })));
+    });
+
+    // 6. Events
     const eventsQuery = query(
       collection(db, "events"),
       orderBy("createdAt", "desc"),
+      limit(80)
     );
-
-    const unsubscribeVisitors = onSnapshot(
-      visitorsQuery,
-      (snapshot) => {
-        setVisitors(
-          snapshot.docs.map((item) => ({
-            id: item.id,
-            ...item.data(),
-          })),
-        );
-      },
-      (error) => setErrorMessage(error.message),
-    );
-
-    const unsubscribeSessions = onSnapshot(
-      sessionsQuery,
-      (snapshot) => {
-        setSessions(
-          snapshot.docs.map((item) => ({
-            id: item.id,
-            ...item.data(),
-          })),
-        );
-      },
-      (error) => setErrorMessage(error.message),
-    );
-
-    const unsubscribeEvents = onSnapshot(
-      eventsQuery,
-      (snapshot) => {
-        setEvents(
-          snapshot.docs.map((item) => ({
-            id: item.id,
-            ...item.data(),
-          })),
-        );
-      },
-      (error) => setErrorMessage(error.message),
-    );
-
-    const unsubscribeQuestions = subscribeAllQuestions(
-      setQuestions,
-      (error) => setErrorMessage(error.message),
-    );
+    const unsubEvents = onSnapshot(eventsQuery, (snap) => {
+      setEvents(snap.docs.map((d) => ({ id: d.id, ...d.data() })));
+    });
 
     return () => {
-      unsubscribeVisitors();
-      unsubscribeSessions();
-      unsubscribeEvents();
-      unsubscribeQuestions();
+      unsubQuestions?.();
+      unsubNotes?.();
+      unsubPrompts?.();
+      unsubSessions?.();
+      unsubVisitors?.();
+      unsubEvents?.();
     };
-  }, [user]);
+  }, [isAdminUser]);
 
-  /**
-   * Dashboard counters.
-   */
-  const counts = useMemo(
-    () => ({
-      totalPageViews: events.filter(
-        (event) => event.type === "page_view",
-      ).length,
-
-      totalVisitors: visitors.length,
-
-      totalEvents: events.length,
-    }),
-    [events, visitors],
-  );
-
-  /**
-   * Active sessions.
-   */
+  // Online active sessions
   const activeSessions = useMemo(() => {
-    const cutoff = now - ONLINE_WINDOW_MS;
+    const now = Date.now();
+    return sessions.filter((s) => {
+      const time = s.lastSeenAt?.toMillis ? s.lastSeenAt.toMillis() : new Date(s.lastSeenAt || 0).getTime();
+      return now - time <= ONLINE_WINDOW_MS;
+    });
+  }, [sessions]);
 
-    return sessions.filter(
-      (session) =>
-        session.isActive !== false &&
-        toMillis(session.lastSeenAt) > cutoff,
-    );
-  }, [now, sessions]);
-
-  /**
-   * Active session indexed by visitor.
-   */
-  const activeSessionByVisitorId = useMemo(
-    () =>
-      activeSessions.reduce((accumulator, session) => {
-        accumulator.set(session.visitorId, session);
-        return accumulator;
-      }, new Map()),
-    [activeSessions],
+  const pendingQuestionsCount = useMemo(
+    () => questions.filter((q) => q.status !== "answered").length,
+    [questions]
   );
 
-  /**
-   * Merge visitor document with current session.
-   */
-  const visitorRows = useMemo(
-    () =>
-      visitors.map((visitor) => {
-        const activeSession =
-          activeSessionByVisitorId.get(visitor.visitorId);
-
-        return {
-          ...visitor,
-          ...(activeSession || {}),
-          id: visitor.id,
-          isOnline: Boolean(activeSession),
-          lastSeenAt:
-            activeSession?.lastSeenAt ||
-            visitor.lastSeenAt,
-        };
-      }),
-    [activeSessionByVisitorId, visitors],
-  );
-
-  /**
-   * Referrer statistics.
-   */
-  const referrerRows = useMemo(
-    () =>
-      toSortedEntries(
-        visitors.reduce((accumulator, visitor) => {
-          const referrer = getHostLabel(visitor.referrer);
-
-          accumulator[referrer] =
-            (accumulator[referrer] || 0) + 1;
-
-          return accumulator;
-        }, {}),
-      ).slice(0, 6),
-    [visitors],
-  );
-
-  /**
-   * Device statistics.
-   */
-  const deviceRows = useMemo(
-    () =>
-      toSortedEntries(
-        countBy(visitors, "device"),
-      ).slice(0, 6),
-    [visitors],
-  );
-
-  /**
-   * Browser statistics.
-   */
-  const browserRows = useMemo(
-    () =>
-      toSortedEntries(
-        countBy(visitors, "browser"),
-      ).slice(0, 6),
-    [visitors],
-  );
-
-  /**
-   * Login.
-   */
-  const handleLogin = async (event) => {
-    event.preventDefault();
-
-    setIsSubmitting(true);
-    setErrorMessage("");
-
-    try {
-      await signInWithEmailAndPassword(
-        auth,
-        email,
-        password,
-      );
-
-      setPassword("");
-    } catch (error) {
-      setErrorMessage(error.message);
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  /**
-   * Answer anonymous question.
-   */
-  const handleAnswerQuestion = async (item) => {
-    setErrorMessage("");
-
-    try {
-      await answerAnonymousQuestion({
-        questionId: item.id,
-        alias: item.alias,
-        question: item.question,
-        answer:
-          answers[item.id] ??
-          item.answer ??
-          "",
-        isPublic:
-          publicFlags[item.id] !== false,
-      });
-
-      setAnswers((current) => ({
-        ...current,
-        [item.id]: "",
-      }));
-    } catch (error) {
-      setErrorMessage(error.message);
-    }
-  };
-
-  /**
-   * Firebase unavailable.
-   */
-  if (!isFirebaseConfigured) {
+  if (!user || !isAdminUser || !authReady || !isFirebaseConfigured) {
     return (
-      <main className="admin-page">
-        <section className="admin-auth-panel">
-          <div className="admin-icon">
-            <FontAwesomeIcon icon={faLock} />
-          </div>
-
-          <h1>Firebase is not configured</h1>
-
-          <p>
-            Add your Firebase values to a local
-            .env file using .env.example, then
-            restart the React dev server.
-          </p>
-        </section>
-      </main>
+      <AdminLoginView
+        user={user}
+        isAdminUser={isAdminUser}
+        authReady={authReady}
+      />
     );
   }
 
-  /**
-   * Loading auth.
-   */
-  if (!authReady) {
-    return (
-      <main className="admin-page">
-        <section className="admin-auth-panel">
-          <h1>Loading analytics...</h1>
-        </section>
-      </main>
-    );
-  }
-
-  /**
-   * Login page.
-   */
-  if (!user) {
-    return (
-      <main className="admin-page">
-        <section className="admin-auth-panel">
-          <div className="admin-icon">
-            <FontAwesomeIcon icon={faLock} />
-          </div>
-
-          <h1>Portfolio Analytics</h1>
-
-          <p>
-            Sign in with your Firebase admin
-            account to view private visitor
-            activity.
-          </p>
-
-          <form
-            className="admin-login-form"
-            onSubmit={handleLogin}
-          >
-            <label>
-              Email
-
-              <input
-                type="email"
-                value={email}
-                onChange={(event) =>
-                  setEmail(event.target.value)
-                }
-                autoComplete="email"
-                required
-              />
-            </label>
-
-            <label>
-              Password
-
-              <input
-                type="password"
-                value={password}
-                onChange={(event) =>
-                  setPassword(event.target.value)
-                }
-                autoComplete="current-password"
-                required
-              />
-            </label>
-
-            {errorMessage ? (
-              <div className="admin-error">
-                {errorMessage}
-              </div>
-            ) : null}
-
-            <button
-              type="submit"
-              className="button-primary"
-              disabled={isSubmitting}
-            >
-              {isSubmitting
-                ? "Signing in..."
-                : "Sign in"}
-            </button>
-          </form>
-        </section>
-      </main>
-    );
-  }
-
-  /**
-   * Logged in but not admin.
-   */
-  if (!isAdminUser) {
-    return (
-      <main className="admin-page">
-        <section className="admin-auth-panel">
-          <div className="admin-icon">
-            <FontAwesomeIcon icon={faLock} />
-          </div>
-
-          <h1>Admin access only</h1>
-
-          <p>
-            This account can submit visitor
-            profile consent, but it cannot view
-            private analytics.
-          </p>
-
-          <button
-            type="button"
-            className="button-primary admin-signout-full"
-            onClick={() => signOut(auth)}
-          >
-            <FontAwesomeIcon
-              icon={faArrowRightFromBracket}
-            />
-            Sign out
-          </button>
-        </section>
-      </main>
-    );
-  }
-
-  /**
-   * Admin dashboard.
-   *
-   * Important:
-   * The page itself is intentionally allowed
-   * to grow vertically. The browser handles
-   * scrolling when content becomes longer
-   * than the viewport.
-   */
   return (
-    <main className="admin-page">
-      <section className="admin-shell">
-        {/* HEADER */}
-        <header className="admin-header">
-          <div>
-            <div className="admin-header-topline">
-              <span className="admin-kicker">
-                Private dashboard
-              </span>
+    <div className="adm-dashboard-root">
+      <AdminTopbar
+        currentTime={currentTime}
+        onSignOut={() => signOut(auth)}
+      />
 
-              <span className="admin-live-badge">
-                <span aria-hidden="true" />
-                Live
-              </span>
-            </div>
-
-            <h1>Portfolio Analytics</h1>
-
-            <p>{user.email}</p>
-          </div>
+      <div className="adm-nav-container">
+        <nav className="adm-tabs-row">
+          <button
+            type="button"
+            className={`adm-tab-button ${activeTab === "questions" ? "is-active" : ""}`}
+            onClick={() => setActiveTab("questions")}
+          >
+            <FontAwesomeIcon icon={faReply} />
+            Hộp thư Ẩn danh & Q&A
+            {pendingQuestionsCount > 0 ? (
+              <span className="adm-tab-pill is-danger">{pendingQuestionsCount}</span>
+            ) : (
+              <span className="adm-tab-pill">{questions.length}</span>
+            )}
+          </button>
 
           <button
             type="button"
-            className="button-secondary"
-            onClick={() => signOut(auth)}
+            className={`adm-tab-button ${activeTab === "prompts" ? "is-active" : ""}`}
+            onClick={() => setActiveTab("prompts")}
           >
-            <FontAwesomeIcon
-              icon={faArrowRightFromBracket}
-            />
-            Sign out
+            <FontAwesomeIcon icon={faLightbulb} />
+            Gợi ý Prompts ({prompts.length})
           </button>
-        </header>
 
-        {errorMessage ? (
-          <div className="admin-error">
-            {errorMessage}
-          </div>
-        ) : null}
+          <button
+            type="button"
+            className={`adm-tab-button ${activeTab === "live" ? "is-active" : ""}`}
+            onClick={() => setActiveTab("live")}
+          >
+            <FontAwesomeIcon icon={faMicrochip} />
+            Khách Realtime
+            <span className="adm-tab-pill is-success">{activeSessions.length} online</span>
+          </button>
 
-        {/* STATS */}
-        <div className="analytics-grid">
-          <article className="analytics-stat">
-            <FontAwesomeIcon icon={faEye} />
-
-            <span>Page views</span>
-
-            <strong>
-              {counts.totalPageViews}
-            </strong>
-          </article>
-
-          <article className="analytics-stat">
-            <FontAwesomeIcon icon={faUsers} />
-
-            <span>Visitors</span>
-
-            <strong>
-              {counts.totalVisitors}
-            </strong>
-          </article>
-
-          <article className="analytics-stat">
-            <FontAwesomeIcon icon={faSignal} />
-
-            <span>Online now</span>
-
-            <strong>
-              {activeSessions.length}
-            </strong>
-          </article>
-
-          <article className="analytics-stat">
+          <button
+            type="button"
+            className={`adm-tab-button ${activeTab === "analytics" ? "is-active" : ""}`}
+            onClick={() => setActiveTab("analytics")}
+          >
             <FontAwesomeIcon icon={faChartLine} />
+            Thống kê & Báo cáo
+          </button>
 
-            <span>Events</span>
+          <button
+            type="button"
+            className={`adm-tab-button ${activeTab === "settings" ? "is-active" : ""}`}
+            onClick={() => setActiveTab("settings")}
+          >
+            <FontAwesomeIcon icon={faCogs} />
+            Cài đặt & Tiện ích
+          </button>
+        </nav>
+      </div>
 
-            <strong>
-              {counts.totalEvents}
-            </strong>
-          </article>
-        </div>
+      <main className="adm-content-container">
+        {activeTab === "questions" && (
+          <AdminQuestionsTab
+            questions={questions}
+            senderNotes={senderNotes}
+            showToast={showToast}
+            onOpenStory={(item) => setStoryItem(item)}
+          />
+        )}
 
-        {/* VISITORS + EVENTS */}
-        <div className="analytics-columns">
-          {/* ONLINE VISITORS */}
-          <article className="analytics-panel">
-            <h2>
-              Online visitors
+        {activeTab === "prompts" && (
+          <AdminPromptsTab
+            prompts={prompts}
+            showToast={showToast}
+          />
+        )}
 
-              <span className="panel-count">
-                {visitorRows.length} saved
-              </span>
-            </h2>
+        {activeTab === "live" && (
+          <AdminLiveDevicesTab
+            sessions={sessions}
+            activeSessions={activeSessions}
+          />
+        )}
 
-            <div className="visitor-list">
-              {visitorRows.length ? (
-                visitorRows.map((session) => (
-                  <div
-                    className={
-                      session.isOnline
-                        ? "visitor-row is-online"
-                        : "visitor-row"
-                    }
-                    key={session.id}
-                  >
-                    <div className="visitor-profile">
-                      {session.profilePhotoURL ? (
-                        <img
-                          src={session.profilePhotoURL}
-                          alt={
-                            session.profileName ||
-                            "Facebook visitor"
-                          }
-                        />
-                      ) : (
-                        <span className="visitor-avatar-fallback">
-                          {getVisitorInitial(session)}
-                        </span>
-                      )}
+        {activeTab === "analytics" && (
+          <AdminAnalyticsTab
+            visitors={visitors}
+            sessions={sessions}
+            events={events}
+          />
+        )}
 
-                      <div>
-                        <strong>
-                          {getVisitorDisplayName(
-                            session,
-                          )}
-                        </strong>
+        {activeTab === "settings" && (
+          <AdminSettingsTab
+            questions={questions}
+            showToast={showToast}
+          />
+        )}
+      </main>
 
-                        <span>
-                          {session.profileName
-                            ? "Anonymous alias / "
-                            : ""}
-                          {getDeviceLine(session)}
-                        </span>
-
-                        <small>
-                          {session.viewport ||
-                            session.screen ||
-                            "Unknown screen"}
-
-                          {session.timezone
-                            ? ` / ${session.timezone}`
-                            : ""}
-
-                          {session.ipAddress
-                            ? ` / IP ${session.ipAddress}`
-                            : ""}
-                        </small>
-
-                        {/* LOCATION */}
-                        <div className="visitor-location">
-                          <FontAwesomeIcon
-                            icon={faMapMarkerAlt}
-                          />
-
-                          <span>
-                            {getLocationText(
-                              session,
-                            )}
-                          </span>
-                        </div>
-
-                        {hasCoordinates(
-                          session,
-                        ) ? (
-                          <a
-                            href={getGoogleMapsUrl(
-                              session,
-                            )}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="visitor-location-link"
-                          >
-                            Xem trên Google Maps
-                          </a>
-                        ) : null}
-                      </div>
-                    </div>
-
-                    <div className="visitor-status">
-                      <span
-                        className={
-                          session.isOnline
-                            ? "status-pill online"
-                            : "status-pill"
-                        }
-                      >
-                        {session.isOnline
-                          ? "Online"
-                          : "Saved"}
-                      </span>
-
-                      <time>
-                        {formatDateTime(
-                          session.lastSeenAt,
-                        )}
-                      </time>
-                    </div>
-                  </div>
-                ))
-              ) : (
-                <p className="admin-empty">
-                  No saved visitors yet.
-                </p>
-              )}
-            </div>
-          </article>
-
-          {/* RECENT EVENTS */}
-          <article className="analytics-panel">
-            <h2>
-              Recent events
-
-              <span className="panel-count">
-                {events.length} total
-              </span>
-            </h2>
-
-            <div className="event-list">
-              {events.length ? (
-                events.map((event) => (
-                  <div
-                    className="event-row"
-                    key={event.id}
-                  >
-                    <div className="event-copy">
-                      <div className="event-title-line">
-                        <strong>
-                          {event.type}
-                        </strong>
-
-                        <span>
-                          {getEventSubject(
-                            event,
-                          )}
-                        </span>
-                      </div>
-
-                      <dl className="event-meta-grid">
-                        {getEventMetaRows(
-                          event,
-                        ).map(
-                          ([label, value]) => (
-                            <div
-                              key={`${event.id}-${label}`}
-                            >
-                              <dt>{label}</dt>
-                              <dd>{value}</dd>
-                            </div>
-                          ),
-                        )}
-                      </dl>
-
-                      {hasCoordinates(
-                        event,
-                      ) ? (
-                        <a
-                          href={getGoogleMapsUrl(
-                            event,
-                          )}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="visitor-location-link"
-                        >
-                          <FontAwesomeIcon
-                            icon={faMapMarkerAlt}
-                          />
-                          Open location
-                        </a>
-                      ) : null}
-                    </div>
-
-                    <time>
-                      {formatDateTime(
-                        event.createdAt,
-                      )}
-                    </time>
-                  </div>
-                ))
-              ) : (
-                <p className="admin-empty">
-                  No events yet.
-                </p>
-              )}
-            </div>
-          </article>
-        </div>
-
-        {/* BREAKDOWNS */}
-        <div className="analytics-columns analytics-columns-compact">
-          <article className="analytics-panel">
-            <h2>
-              <FontAwesomeIcon
-                icon={faGlobe}
-              />
-              Referrers
-            </h2>
-
-            {referrerRows.length ? (
-              referrerRows.map(
-                ([label, value]) => (
-                  <div
-                    className="breakdown-row"
-                    key={label}
-                  >
-                    <span>{label}</span>
-
-                    <strong>{value}</strong>
-                  </div>
-                ),
-              )
-            ) : (
-              <p className="admin-empty">
-                No referrer data.
-              </p>
-            )}
-          </article>
-
-          <article className="analytics-panel">
-            <h2>
-              <FontAwesomeIcon
-                icon={faDesktop}
-              />
-              Devices
-            </h2>
-
-            {deviceRows.length ? (
-              deviceRows.map(
-                ([label, value]) => (
-                  <div
-                    className="breakdown-row"
-                    key={label}
-                  >
-                    <span>{label}</span>
-
-                    <strong>{value}</strong>
-                  </div>
-                ),
-              )
-            ) : (
-              <p className="admin-empty">
-                No device data.
-              </p>
-            )}
-          </article>
-
-          <article className="analytics-panel">
-            <h2>Browsers</h2>
-
-            {browserRows.length ? (
-              browserRows.map(
-                ([label, value]) => (
-                  <div
-                    className="breakdown-row"
-                    key={label}
-                  >
-                    <span>{label}</span>
-
-                    <strong>{value}</strong>
-                  </div>
-                ),
-              )
-            ) : (
-              <p className="admin-empty">
-                No browser data.
-              </p>
-            )}
-          </article>
-        </div>
-
-        {/* LIVE DEVICE DETAILS */}
-        <article className="analytics-panel analytics-device-panel">
-          <h2>
-            <FontAwesomeIcon
-              icon={faMicrochip}
-            />
-            Live device details
-
-            <span className="panel-count">
-              {activeSessions.length} active
-            </span>
-          </h2>
-
-          <div className="device-detail-grid">
-            {activeSessions.length ? (
-              activeSessions.map(
-                (session) => (
-                  <div
-                    className="device-detail-card"
-                    key={`${session.id}-device`}
-                  >
-                    <div className="device-detail-heading">
-                      <strong>
-                        {getVisitorDisplayName(
-                          session,
-                        )}
-                      </strong>
-
-                      <span
-                        className="status-pill online"
-                      >
-                        Online
-                      </span>
-                    </div>
-
-                    <dl>
-                      <div>
-                        <dt>IP</dt>
-                        <dd>
-                          {session.ipAddress ||
-                            "Unknown"}
-                        </dd>
-                      </div>
-
-                      <div>
-                        <dt>OS</dt>
-                        <dd>
-                          {session.operatingSystem ||
-                            "Unknown"}
-                        </dd>
-                      </div>
-
-                      <div>
-                        <dt>Model</dt>
-                        <dd>
-                          {session.deviceModel ||
-                            session.platform ||
-                            "Unknown"}
-                        </dd>
-                      </div>
-
-                      <div>
-                        <dt>CPU / RAM</dt>
-                        <dd>
-                          {session.hardwareConcurrency ||
-                            "?"}{" "}
-                          cores
-                          {session.deviceMemory
-                            ? ` / ${session.deviceMemory} GB`
-                            : ""}
-                        </dd>
-                      </div>
-
-                      <div>
-                        <dt>Screen</dt>
-                        <dd>
-                          {session.screen ||
-                            "Unknown"}{" "}
-                          @{" "}
-                          {session.pixelRatio ||
-                            1}
-                          x
-                        </dd>
-                      </div>
-
-                      <div>
-                        <dt>Touch</dt>
-                        <dd>
-                          {session.maxTouchPoints ||
-                            0}{" "}
-                          points
-                        </dd>
-                      </div>
-
-                      <div>
-                        <dt>Network</dt>
-                        <dd>
-                          {session.networkEffectiveType ||
-                            "Unknown"}
-                        </dd>
-                      </div>
-
-                      {/* LOCATION */}
-                      <div className="device-location-detail">
-                        <dt>
-                          <FontAwesomeIcon
-                            icon={faMapMarkerAlt}
-                          />
-                          Address
-                        </dt>
-
-                        <dd>
-                          {getLocationText(
-                            session,
-                          )}
-                        </dd>
-                      </div>
-
-                      <div>
-                        <dt>Coordinates</dt>
-
-                        <dd>
-                          {hasCoordinates(
-                            session,
-                          )
-                            ? `${session.latitude}, ${session.longitude}`
-                            : "Unknown"}
-                        </dd>
-                      </div>
-
-                      <div>
-                        <dt>GPS accuracy</dt>
-
-                        <dd>
-                          {formatAccuracy(
-                            session.accuracy,
-                          )}
-                        </dd>
-                      </div>
-
-                      <div>
-                        <dt>Source</dt>
-
-                        <dd>
-                          {session.locationSource ||
-                            "Unknown"}
-                        </dd>
-                      </div>
-                    </dl>
-
-                    {hasCoordinates(
-                      session,
-                    ) ? (
-                      <a
-                        href={getGoogleMapsUrl(
-                          session,
-                        )}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="button-secondary device-map-button"
-                      >
-                        <FontAwesomeIcon
-                          icon={faMapMarkerAlt}
-                        />
-                        Open Google Maps
-                      </a>
-                    ) : null}
-                  </div>
-                ),
-              )
-            ) : (
-              <p className="admin-empty">
-                No live device details yet.
-              </p>
-            )}
+      <div className="adm-toast-container">
+        {toasts.map((t) => (
+          <div className="adm-toast" key={t.id}>
+            {t.message}
           </div>
-        </article>
+        ))}
+      </div>
 
-        {/* ANONYMOUS QUESTIONS */}
-        <article className="analytics-panel admin-question-panel">
-          <h2>
-            <FontAwesomeIcon
-              icon={faReply}
-            />
-            Anonymous questions
-
-            <span className="panel-count">
-              {questions.length}
-            </span>
-          </h2>
-
-          <div className="admin-question-list">
-            {questions.length ? (
-              questions.map((item) => (
-                <div
-                  className="admin-question-card"
-                  key={item.id}
-                >
-                  <div className="admin-question-meta">
-                    <div>
-                      <strong>
-                        {item.alias ||
-                          "Người hỏi ẩn danh"}
-                      </strong>
-
-                      {item.contact ? (
-                        <span>
-                          {item.contact}
-                        </span>
-                      ) : null}
-
-                      {item.ipAddress ? (
-                        <span>
-                          IP:{" "}
-                          {item.ipAddress}
-                        </span>
-                      ) : null}
-                    </div>
-
-                    <span
-                      className={
-                        item.status ===
-                        "answered"
-                          ? "question-status answered"
-                          : "question-status"
-                      }
-                    >
-                      {item.status ===
-                      "answered"
-                        ? "Answered"
-                        : "Pending"}
-                    </span>
-                  </div>
-
-                  <p>{item.question}</p>
-
-                  {item.answer ? (
-                    <blockquote>
-                      {item.answer}
-                    </blockquote>
-                  ) : null}
-
-                  <textarea
-                    value={
-                      answers[item.id] ??
-                      item.answer ??
-                      ""
-                    }
-                    onChange={(event) =>
-                      setAnswers(
-                        (current) => ({
-                          ...current,
-                          [item.id]:
-                            event.target.value,
-                        }),
-                      )
-                    }
-                    placeholder="Write your answer..."
-                    rows={3}
-                  />
-
-                  <div className="admin-question-actions">
-                    <label>
-                      <input
-                        type="checkbox"
-                        checked={
-                          publicFlags[
-                            item.id
-                          ] !== false
-                        }
-                        onChange={(event) =>
-                          setPublicFlags(
-                            (current) => ({
-                              ...current,
-                              [item.id]:
-                                event.target
-                                  .checked,
-                            }),
-                          )
-                        }
-                      />
-                      Public answer
-                    </label>
-
-                    <button
-                      type="button"
-                      className="button-primary"
-                      onClick={() =>
-                        handleAnswerQuestion(
-                          item,
-                        )
-                      }
-                    >
-                      Save answer
-                    </button>
-                  </div>
-                </div>
-              ))
-            ) : (
-              <p className="admin-empty">
-                No anonymous questions yet.
-              </p>
-            )}
-          </div>
-        </article>
-      </section>
-    </main>
+      {storyItem && (
+        <NglStoryModal
+          item={storyItem}
+          onClose={() => setStoryItem(null)}
+        />
+      )}
+    </div>
   );
 }
 
-export default AdminAnalytics;
+

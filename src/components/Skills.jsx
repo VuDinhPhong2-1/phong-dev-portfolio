@@ -2,6 +2,7 @@ import React, { useRef } from "react";
 import CustomHook from "./CustomHook";
 import { localizedContent } from "../data/localizedContent";
 import { useLanguage } from "../context/LanguageContext";
+import { trackPortfolioEvent } from "../services/analyticsTracker";
 
 function Skills() {
   const { language } = useLanguage();
@@ -29,7 +30,14 @@ function Skills() {
             <p>{group.description}</p>
             <div className="skill-items">
               {group.items.map((item) => (
-                <span key={item}>{item}</span>
+                <span
+                  key={item}
+                  onClick={() => trackPortfolioEvent("skill_badge_click", { skill: item, group: group.title })}
+                  style={{ cursor: "pointer" }}
+                  title={`Xem kỹ năng ${item}`}
+                >
+                  {item}
+                </span>
               ))}
             </div>
           </article>
@@ -40,3 +48,4 @@ function Skills() {
 }
 
 export default Skills;
+

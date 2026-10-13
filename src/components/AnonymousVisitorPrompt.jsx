@@ -41,6 +41,7 @@ function AnonymousVisitorPrompt() {
     () =>
       isFirebaseConfigured &&
       !window.location.hash.startsWith("#/admin-analytics") &&
+      !window.location.hash.startsWith("#/admin") &&
       isSocialReferrer(),
     [],
   );

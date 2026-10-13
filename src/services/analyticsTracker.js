@@ -8,6 +8,7 @@ import {
 } from "firebase/firestore";
 
 import { db, isFirebaseConfigured } from "./firebase";
+import { readOrCreatePersistentItem } from "../utils/persistentStorage";
 
 const VISITOR_ID_KEY = "portfolio_visitor_id";
 const VISITOR_CREATED_AT_KEY = "portfolio_visitor_created_at";
@@ -43,7 +44,8 @@ const canTrack = () =>
   db &&
   typeof window !== "undefined" &&
   typeof localStorage !== "undefined" &&
-  !window.location.hash.startsWith("#/admin-analytics");
+  !window.location.hash.startsWith("#/admin-analytics") &&
+  !window.location.hash.startsWith("#/admin");
 
 /* =========================================================
    ID
@@ -433,18 +435,15 @@ const getProfileContext = () => {
 ========================================================= */
 
 const ensureIds = () => {
-  currentVisitorId = readOrCreateLocalValue(
-    localStorage,
+  currentVisitorId = readOrCreatePersistentItem(
     VISITOR_ID_KEY,
     () => createId("visitor")
   );
 
-  currentVisitorCreatedAt =
-    readOrCreateLocalValue(
-      localStorage,
-      VISITOR_CREATED_AT_KEY,
-      () => new Date().toISOString()
-    );
+  currentVisitorCreatedAt = readOrCreatePersistentItem(
+    VISITOR_CREATED_AT_KEY,
+    () => new Date().toISOString()
+  );
 
   currentSessionId =
     readOrCreateLocalValue(
@@ -459,6 +458,108 @@ const ensureIds = () => {
       SESSION_CREATED_AT_KEY,
       () => new Date().toISOString()
     );
+};
+
+export const getCurrentVisitorId = () => {
+  if (!currentVisitorId) {
+    ensureIds();
+  }
+  return currentVisitorId;
+};
+
+export const getCurrentSessionId = () => {
+  if (!currentSessionId) {
+    ensureIds();
+  }
+  return currentSessionId;
+};
+
+export const getSenderDeviceSummary = () => {
+  if (typeof window === "undefined") return "Unknown device";
+  const os = getOperatingSystem();
+  const browser = getBrowserName();
+  const screenRes =
+    typeof window.screen !== "undefined"
+      ? `${window.screen.width}x${window.screen.height}`
+      : "";
+  const tz =
+    typeof Intl !== "undefined" && Intl.DateTimeFormat
+      ? Intl.DateTimeFormat().resolvedOptions()?.timeZone || ""
+      : "";
+  return `${os} • ${browser}${screenRes ? ` (${screenRes})` : ""}${tz ? ` • ${tz}` : ""}`;
+};
+
+export const getSenderFingerprint = () => {
+  if (typeof window === "undefined") return "fp_none";
+  try {
+    const components = [
+      navigator.userAgent || "",
+      navigator.language || "",
+      window.screen?.width || 0,
+      window.screen?.height || 0,
+      window.screen?.colorDepth || 0,
+      navigator.hardwareConcurrency || 0,
+      typeof Intl !== "undefined" && Intl.DateTimeFormat
+        ? Intl.DateTimeFormat().resolvedOptions()?.timeZone || ""
+        : "",
+    ];
+    const str = components.join("|||");
+    let hash = 0;
+    for (let i = 0; i < str.length; i++) {
+      hash = (hash << 5) - hash + str.charCodeAt(i);
+      hash |= 0;
+    }
+    return "fp_" + Math.abs(hash).toString(36);
+  } catch (e) {
+    return "fp_fallback";
+  }
+};
+
+/* =========================================================
+   ACTION FORMATTER
+========================================================= */
+
+export const formatActionSummary = (type, metadata = {}) => {
+  switch (type) {
+    case "page_view":
+      return "Truy cập trang";
+    case "section_view":
+      return `Xem mục: ${metadata.section || "chưa rõ"}`;
+    case "section_dwell":
+      return `Dừng đọc ${metadata.section || "mục"} (${metadata.durationSeconds || 0}s)`;
+    case "scroll_depth":
+      return `Cuộn trang: ${metadata.depth || 0}%`;
+    case "cv_download":
+      return `Tải CV (${metadata.source || "trang"})`;
+    case "github_click":
+      return `Xem Github (${metadata.source || metadata.project || "link"})`;
+    case "contact_click":
+      return `Bấm liên hệ: ${metadata.channel || metadata.company || "kênh"}`;
+    case "project_click":
+      return `Xem dự án: ${metadata.project || metadata.source || "dự án"}`;
+    case "floating_bubble_click":
+      return "Bấm bong bóng Messenger";
+    case "floating_bubble_dismiss":
+      return "Đóng bong bóng Messenger";
+    case "header_ngl_click":
+      return "Bấm Hỏi ẩn danh (Header)";
+    case "nav_click":
+      return `Điều hướng menu: ${metadata.tab || "tab"}`;
+    case "language_change":
+      return `Đổi ngôn ngữ: ${metadata.from} ➔ ${metadata.to}`;
+    case "text_copy":
+      return `Sao chép: "${(metadata.textSnippet || "").slice(0, 30)}..."`;
+    case "skill_badge_click":
+      return `Xem kỹ năng: ${metadata.skill || "skill"}`;
+    case "anonymous_alias_saved":
+      return `Đặt biệt danh: ${metadata.alias || "ẩn danh"}`;
+    case "anonymous_alias_skipped":
+      return "Bỏ qua đặt biệt danh";
+    case "anonymous_question_submitted":
+      return `Gửi câu hỏi NGL: ${metadata.profileName || "ẩn danh"}`;
+    default:
+      return type.replace(/_/g, " ");
+  }
 };
 
 /* =========================================================
@@ -478,10 +579,13 @@ export const trackPortfolioEvent = async (
   }
 
   try {
+    const actionLabel = formatActionSummary(type, metadata);
+
     await addDoc(
       collection(db, "events"),
       {
         type,
+        actionLabel,
 
         visitorId:
           currentVisitorId,
@@ -499,6 +603,23 @@ export const trackPortfolioEvent = async (
         ...metadata,
       }
     );
+
+    const sessionUpdates = {
+      lastAction: actionLabel,
+      lastActionType: type,
+      lastActionAt: serverTimestamp(),
+      lastSeenAt: serverTimestamp(),
+    };
+
+    if (type === "scroll_depth" && typeof metadata.depth === "number") {
+      sessionUpdates.maxScrollDepth = metadata.depth;
+    }
+
+    setDoc(
+      doc(db, "sessions", currentSessionId),
+      sessionUpdates,
+      { merge: true }
+    ).catch(() => {});
   } catch (error) {
     if (
       process.env.NODE_ENV ===

@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react";
 import "./App.css";
+import "./magic.css";
+import "./ngl.css";
 
 import Header from "./components/Header";
 import Home from "./components/Home";
@@ -12,11 +14,11 @@ import Experience from "./components/Experience";
 import AdminAnalytics from "./components/AdminAnalytics";
 import AnonymousVisitorPrompt from "./components/AnonymousVisitorPrompt";
 import LegalPage from "./components/LegalPage";
-import LocationPermissionModal from "./components/LocationPermissionModal";
+import NglStandalonePage from "./components/NglStandalonePage";
+import FloatingNglBubble from "./components/FloatingNglBubble";
 
 import { LanguageProvider } from "./context/LanguageContext";
 import { usePortfolioAnalytics } from "./hooks/usePortfolioAnalytics";
-import { setCachedLocationContext } from "./services/analyticsTracker";
 
 /**
  * Nội dung website chính.
@@ -24,8 +26,8 @@ import { setCachedLocationContext } from "./services/analyticsTracker";
  * Analytics chỉ bắt đầu sau khi người dùng
  * đã xử lý popup xin vị trí.
  */
-function PortfolioContent({ location }) {
-  usePortfolioAnalytics(location);
+function PortfolioContent() {
+  usePortfolioAnalytics();
 
   return (
     <main>
@@ -38,6 +40,7 @@ function PortfolioContent({ location }) {
       <Education />
       <Contacts />
       <AnonymousVisitorPrompt />
+      <FloatingNglBubble />
     </main>
   );
 }
@@ -46,39 +49,7 @@ function PortfolioContent({ location }) {
  * Website portfolio.
  */
 function PortfolioApp() {
-  const [locationConfirmed, setLocationConfirmed] = useState(false);
-  const [location, setLocation] = useState(null);
-
-  const handleLocationSuccess = (locationData) => {
-    // Không cho phép null đi qua
-    if (
-      !locationData ||
-      typeof locationData.latitude !== "number" ||
-      typeof locationData.longitude !== "number" ||
-      !locationData.address
-    ) {
-      console.error("❌ Location data không hợp lệ:", locationData);
-      return;
-    }
-
-    setLocation(locationData);
-
-    setCachedLocationContext(locationData);
-
-    // Chỉ mở website khi đã có location hợp lệ
-    setLocationConfirmed(true);
-  };
-
-  // CHƯA CÓ LOCATION → KHÔNG ĐƯỢC VÀO WEBSITE
-  if (!locationConfirmed || !location) {
-    return (
-      <LocationPermissionModal
-        onSuccess={handleLocationSuccess}
-      />
-    );
-  }
-
-  return <PortfolioContent location={location} />;
+  return <PortfolioContent />;
 }
 
 /**
@@ -99,9 +70,13 @@ function App() {
     };
   }, []);
 
-  const isAdminRoute = hash.startsWith("#/admin-analytics");
+  const isAdminRoute =
+    hash.startsWith("#/admin-analytics") ||
+    hash === "#/admin" ||
+    hash.startsWith("#/admin/");
   const isPrivacyRoute = hash.startsWith("#/privacy");
   const isDataDeletionRoute = hash.startsWith("#/data-deletion");
+  const isNglRoute = hash.startsWith("#/ngl") || hash.startsWith("#/ask");
 
   if (isPrivacyRoute) {
     return <LegalPage page="privacy" />;
@@ -109,6 +84,10 @@ function App() {
 
   if (isDataDeletionRoute) {
     return <LegalPage page="data-deletion" />;
+  }
+
+  if (isNglRoute) {
+    return <NglStandalonePage />;
   }
 
   return (
