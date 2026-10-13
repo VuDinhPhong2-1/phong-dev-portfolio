@@ -67,15 +67,17 @@ function Contacts() {
             >
               {ui.downloadCv}
             </a>
-            <a
-              className="button-secondary"
-              href={profile.github}
-              target="_blank"
-              rel="noopener noreferrer"
-              onClick={() => trackPortfolioEvent("github_click", { source: "contact_profile" })}
-            >
-              {ui.githubProfile}
-            </a>
+            {profile.github && (
+              <a
+                className="button-secondary"
+                href={profile.github}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={() => trackPortfolioEvent("github_click", { source: "contact_profile" })}
+              >
+                {ui.githubProfile}
+              </a>
+            )}
           </div>
         </div>
 

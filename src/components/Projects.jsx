@@ -96,26 +96,28 @@ function Projects() {
                   </div>
                 </div>
 
-                <div className="project-actions">
-                  {project.sources.map((source) => (
-                    <a
-                      key={source.href}
-                      className="button-secondary"
-                      href={source.href}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      onClick={() =>
-                        trackPortfolioEvent(source.href.includes("github.com") ? "github_click" : "project_click", {
-                          project: project.name,
-                          source: source.label,
-                          href: source.href,
-                        })
-                      }
-                    >
-                      {source.label}
-                    </a>
-                  ))}
-                </div>
+                {project.sources && project.sources.length > 0 && (
+                  <div className="project-actions">
+                    {project.sources.map((source) => (
+                      <a
+                        key={source.href}
+                        className="button-secondary"
+                        href={source.href}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        onClick={() =>
+                          trackPortfolioEvent(source.href.includes("github.com") ? "github_click" : "project_click", {
+                            project: project.name,
+                            source: source.label,
+                            href: source.href,
+                          })
+                        }
+                      >
+                        {source.label}
+                      </a>
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
           </article>

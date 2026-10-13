@@ -43,6 +43,5 @@ export const profile = {
     "https://res.cloudinary.com/dk0lhapty/image/upload/v1741073555/z5994467109260_01a414be5deb1fc3b89ce98b89286cc5_qnprwh.jpg",
   cvLink:
     "https://drive.google.com/file/d/1f73MIqPAOqs89jdyQJRXGV9HO_FBL9gO/view?usp=sharing",
-  github: "https://github.com/VuDinhPhong2-1",
   portfolioLabel: "Current Portfolio",
 };

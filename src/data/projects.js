@@ -20,16 +20,7 @@ export const projects = [
       backend: "ASP.NET Core / .NET, MongoDB",
       tools: "GitHub, Postman, Swagger",
     },
-    sources: [
-      {
-        label: "View Backend Source",
-        href: "https://github.com/VuDinhPhong2-1/BE-MOS_EXCEL_GRADE",
-      },
-      {
-        label: "View Frontend Source",
-        href: "https://github.com/VuDinhPhong2-1/FE-MOS_GRADE",
-      },
-    ],
+    sources: [],
   },
   {
     name: "XGear eCommerce Website Clone",
@@ -54,15 +45,6 @@ export const projects = [
         "NestJS, TypeScript, JWT, Google OAuth, SQL Server, TypeORM, Redis, Bull Queue, Nodemailer, Cloudinary, Stripe, Momo",
       tools: "Docker, Git, Postman, Swagger",
     },
-    sources: [
-      {
-        label: "View Frontend Source",
-        href: "https://github.com/VuDinhPhong2-1/FE-WebBanDoDienTu",
-      },
-      {
-        label: "View Backend Source",
-        href: "https://github.com/VuDinhPhong2-1/WebBanDoDienTu",
-      },
-    ],
+    sources: [],
   },
 ];

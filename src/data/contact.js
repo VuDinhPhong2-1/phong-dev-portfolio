@@ -13,9 +13,4 @@ export const contactItems = [
     title: "Address",
     value: "16 Yen The, Tan Son Hoa, Tp.HCM",
   },
-  {
-    title: "GitHub",
-    value: "github.com/VuDinhPhong2-1",
-    href: "https://github.com/VuDinhPhong2-1",
-  },
 ];

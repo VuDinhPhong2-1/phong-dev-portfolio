@@ -3,7 +3,6 @@ const commonLinks = {
     "https://res.cloudinary.com/dk0lhapty/image/upload/v1741073555/z5994467109260_01a414be5deb1fc3b89ce98b89286cc5_qnprwh.jpg",
   cvLink:
     "https://drive.google.com/file/d/1f73MIqPAOqs89jdyQJRXGV9HO_FBL9gO/view?usp=sharing",
-  github: "https://github.com/VuDinhPhong2-1",
 };
 
 const projectImages = {
@@ -13,26 +12,8 @@ const projectImages = {
 };
 
 const projectSources = {
-  mos: [
-    {
-      label: { en: "View Backend Source", vi: "Xem mã nguồn Backend" },
-      href: "https://github.com/VuDinhPhong2-1/BE-MOS_EXCEL_GRADE",
-    },
-    {
-      label: { en: "View Frontend Source", vi: "Xem mã nguồn Frontend" },
-      href: "https://github.com/VuDinhPhong2-1/FE-MOS_GRADE",
-    },
-  ],
-  xgear: [
-    {
-      label: { en: "View Frontend Source", vi: "Xem mã nguồn Frontend" },
-      href: "https://github.com/VuDinhPhong2-1/FE-WebBanDoDienTu",
-    },
-    {
-      label: { en: "View Backend Source", vi: "Xem mã nguồn Backend" },
-      href: "https://github.com/VuDinhPhong2-1/WebBanDoDienTu",
-    },
-  ],
+  mos: [],
+  xgear: [],
 };
 
 const englishProjects = [
@@ -364,11 +345,6 @@ export const localizedContent = {
       { title: "Phone", value: "0559548503", href: "tel:0559548503" },
       { title: "Address", value: "16 Yen The, Tan Son Hoa, Tp.HCM" },
       {
-        title: "GitHub",
-        value: "github.com/VuDinhPhong2-1",
-        href: "https://github.com/VuDinhPhong2-1",
-      },
-      {
         title: "Facebook",
         value: "facebook.com/9110n9",
         href: "https://www.facebook.com/9110n9",
@@ -605,11 +581,6 @@ export const localizedContent = {
       },
       { title: "Điện thoại", value: "0559548503", href: "tel:0559548503" },
       { title: "Địa chỉ", value: "16 Yên Thế, Tân Sơn Hòa, Tp.HCM" },
-      {
-        title: "GitHub",
-        value: "github.com/VuDinhPhong2-1",
-        href: "https://github.com/VuDinhPhong2-1",
-      },
       {
         title: "Facebook",
         value: "facebook.com/9110n9",
