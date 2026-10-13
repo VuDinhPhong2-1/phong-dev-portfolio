@@ -56,7 +56,6 @@ export const sendQuestionEmailNotification = async ({
   keepPrivate = false,
   ipContext = {},
 }) => {
-  const targetEmail = getNotifyEmail();
   const locationStr = formatLocation(ipContext);
   const deviceStr = formatDeviceInfo(ipContext);
   const timestampStr = new Date().toLocaleString("vi-VN", {
@@ -67,10 +66,6 @@ export const sendQuestionEmailNotification = async ({
   const privacyLabel = keepPrivate
     ? "🔒 RIÊNG TƯ (Yêu cầu KHÔNG công khai lên bảng tin Q&A)"
     : "🌐 Bình thường (Có thể công khai)";
-
-  const emailSubject = keepPrivate
-    ? `🔒 [Portfolio NGL - RIÊNG TƯ] Tin nhắn mới từ ${alias} (${tag})`
-    : `💌 [Portfolio NGL] Tin nhắn mới từ ${alias} (${tag})`;
 
   const dashboardUrl =
     typeof window !== "undefined" && window.location?.origin
@@ -85,7 +80,6 @@ export const sendQuestionEmailNotification = async ({
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        recipient: targetEmail,
         id,
         alias,
         question,
@@ -104,75 +98,11 @@ export const sendQuestionEmailNotification = async ({
       const data = await apiResponse.json().catch(() => ({}));
       return { success: true, provider: data.provider || "serverless-api" };
     }
-  } catch (_apiErr) {
-    // Serverless endpoint not present (e.g. static dev server or GitHub Pages)
+    const error = await apiResponse.json().catch(() => ({}));
+    return { success: false, message: error.error || "Email notification request failed" };
+  } catch (apiError) {
+    return { success: false, message: apiError.message || "Email notification service unavailable" };
   }
-
-  // 2. Fallback: FormSubmit AJAX endpoint (zero-config, directly sends to target email)
-  try {
-    const payload = {
-      _subject: emailSubject,
-      _template: "table",
-      _captcha: "false",
-      "Người gửi": alias,
-      "Chủ đề (Tag)": tag,
-      "Chế độ bảo mật": privacyLabel,
-      "Nội dung tin nhắn / câu hỏi": question,
-      "Thông tin liên hệ (nếu có)": contact || "Ẩn danh (Không để lại liên hệ)",
-      "Thời gian gửi": timestampStr,
-      "Vị trí địa lý": locationStr,
-      "Thiết bị": deviceStr,
-      "Mã câu hỏi (ID)": id || "N/A",
-      "Link Quản trị (Admin)": dashboardUrl,
-    };
-
-    const formSubmitResponse = await fetch(
-      `https://formsubmit.co/ajax/${encodeURIComponent(targetEmail)}`,
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Accept: "application/json",
-        },
-        body: JSON.stringify(payload),
-      },
-    );
-
-    if (formSubmitResponse.ok) {
-      const result = await formSubmitResponse.json().catch(() => ({}));
-      return { success: true, provider: "formsubmit", result };
-    }
-  } catch (fsErr) {
-    console.warn("FormSubmit email notification error:", fsErr);
-  }
-
-  // 3. Fallback: Web3Forms if access key is available in env
-  const web3Key = process.env.REACT_APP_WEB3FORMS_ACCESS_KEY;
-  if (web3Key) {
-    try {
-      const web3Response = await fetch("https://api.web3forms.com/submit", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Accept: "application/json",
-        },
-        body: JSON.stringify({
-          access_key: web3Key,
-          subject: `💌 [Portfolio NGL] Tin nhắn mới từ ${alias}`,
-          from_name: "Phong Portfolio Notification",
-          message: `Người gửi: ${alias}\nChủ đề: ${tag}\nNội dung: ${question}\nLiên hệ: ${contact || "Không có"}\nVị trí: ${locationStr}\nAdmin: ${dashboardUrl}`,
-        }),
-      });
-
-      if (web3Response.ok) {
-        return { success: true, provider: "web3forms" };
-      }
-    } catch (_w3Err) {
-      // Ignore
-    }
-  }
-
-  return { success: false, message: "All email providers unavailable" };
 };
 
 /**

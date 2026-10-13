@@ -44,6 +44,23 @@ When Firebase is configured, the public portfolio records anonymous visitor sess
 section views, contact clicks, CV downloads, GitHub clicks, device type, browser, referrer, language,
 screen size, timezone, IP address, and online status. The dashboard is private and requires Firebase Auth.
 
+Engagement signals are converted into an interest score and shown in the **Khách quan tâm** tab.
+The implementation uses a random resettable visitor ID and does not generate a passive browser
+fingerprint. Vercel IP headers provide approximate network location; precise browser location still
+requires explicit permission.
+
+## Realtime notification setup
+
+Configure these server-side environment variables in Vercel (never prefix secrets with
+`REACT_APP_`):
+
+- `TELEGRAM_BOT_TOKEN` and `TELEGRAM_CHAT_ID` for new-message and hot-lead alerts.
+- `RESEND_API_KEY`, `RESEND_FROM_EMAIL`, and `NOTIFY_EMAIL` for email delivery.
+- `ADMIN_DASHBOARD_URL` for the link included in notifications.
+
+The full template is in `.env.example`. After changing `firestore.rules`, deploy the rules to the
+same Firebase project before releasing the frontend.
+
 If a visitor comes from Facebook, the portfolio can ask for permission to capture only their
 Facebook display name and avatar. To enable that flow, turn on Facebook as a Firebase Authentication
 provider and configure the Facebook app ID/secret in Firebase Console.

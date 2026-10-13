@@ -13,6 +13,7 @@ import {
 import { db, isFirebaseConfigured } from "./firebase";
 import {
   getCurrentSessionId,
+  getCurrentInterestScore,
   getCurrentVisitorId,
   getPortfolioIpContext,
   getSenderDeviceSummary,
@@ -21,8 +22,12 @@ import {
 } from "./analyticsTracker";
 import { saveUserQuestion } from "./nglNotificationService";
 import { sendQuestionEmailNotification } from "./emailNotificationService";
+import { sendQuestionTelegramNotification } from "./telegramNotificationService";
 
 const canUseQuestions = () => isFirebaseConfigured && db;
+const RATE_LIMIT_KEY = "ngl_submit_rate_limit_v2";
+const RATE_LIMIT_WINDOW_MS = 5 * 60 * 1000;
+const RATE_LIMIT_MAX = 4;
 
 const cleanText = (value, maxLength) =>
   String(value || "")
@@ -38,12 +43,38 @@ const isValidContact = (value) => {
   return emailPattern.test(normalized) || phonePattern.test(normalized);
 };
 
+const enforceBrowserRateLimit = () => {
+  if (typeof localStorage === "undefined") return;
+  try {
+    const now = Date.now();
+    const attempts = JSON.parse(localStorage.getItem(RATE_LIMIT_KEY) || "[]")
+      .filter((time) => now - Number(time) < RATE_LIMIT_WINDOW_MS);
+    if (attempts.length >= RATE_LIMIT_MAX) {
+      throw new Error("Bạn đã gửi 4 tin trong 5 phút. Hãy nghỉ một chút rồi thử lại nhé.");
+    }
+    attempts.push(now);
+    localStorage.setItem(RATE_LIMIT_KEY, JSON.stringify(attempts));
+  } catch (error) {
+    if (error instanceof Error && error.message.includes("4 tin")) throw error;
+  }
+};
+
+const getModerationFlags = (text) => {
+  const value = String(text || "").toLowerCase();
+  const flags = [];
+  if (/(https?:\/\/|www\.)/i.test(value)) flags.push("contains_link");
+  if (/(casino|betting|cá cược|vay nóng|kiếm tiền nhanh)/i.test(value)) flags.push("possible_spam");
+  if (/(đồ ngu|óc chó|fuck|địt mẹ)/i.test(value)) flags.push("toxic_language");
+  return flags;
+};
+
 export const submitAnonymousQuestion = async ({
   alias,
   contact,
   question,
   tag,
   keepPrivate = false,
+  website = "",
 }) => {
   if (!canUseQuestions()) {
     throw new Error("Firebase chưa được cấu hình.");
@@ -55,6 +86,11 @@ export const submitAnonymousQuestion = async ({
   const cleanTag = cleanText(tag, 40) || "NGL Anonymous";
   const isPrivate = Boolean(keepPrivate);
 
+  // Honeypot: real visitors never see or fill this field.
+  if (cleanText(website, 120)) {
+    return `accepted_${Date.now()}`;
+  }
+
   // Contact is optional for true NGL experience. Only validate if user typed something.
   if (cleanContact && !isValidContact(cleanContact)) {
     throw new Error("Email hoặc số điện thoại chưa đúng định dạng.");
@@ -63,6 +99,8 @@ export const submitAnonymousQuestion = async ({
   if (!cleanQuestion) {
     throw new Error("Bạn hãy nhập câu hỏi trước nhé.");
   }
+
+  enforceBrowserRateLimit();
 
   const ipContext = await getPortfolioIpContext();
   const visitorId = getCurrentVisitorId();
@@ -87,6 +125,7 @@ export const submitAnonymousQuestion = async ({
     sessionId: sessionId || "unknown_session",
     deviceSummary: deviceSummary || "Unknown device",
     deviceFingerprint: deviceFingerprint || "fp_unknown",
+    moderationFlags: getModerationFlags(cleanQuestion),
     ...ipContext,
   };
 
@@ -97,6 +136,14 @@ export const submitAnonymousQuestion = async ({
     question: cleanQuestion,
     tag: cleanTag,
     keepPrivate: isPrivate,
+  });
+
+  await trackPortfolioEvent("anonymous_question_submitted", {
+    questionId: result.id,
+    profileName: cleanAlias,
+    tag: cleanTag,
+    keepPrivate: isPrivate,
+    visitorId,
   });
 
   // Tự động gửi thông báo Email đến vudinhphong.26001@gmail.com
@@ -115,12 +162,21 @@ export const submitAnonymousQuestion = async ({
     console.warn("Gửi email thông báo thất bại:", emailError);
   });
 
-  trackPortfolioEvent("anonymous_question_submitted", {
-    questionId: result.id,
-    profileName: cleanAlias,
+  sendQuestionTelegramNotification({
+    id: result.id,
+    alias: cleanAlias,
+    question: cleanQuestion,
     tag: cleanTag,
     keepPrivate: isPrivate,
-    visitorId,
+    interestScore: getCurrentInterestScore(),
+    ipContext: {
+      ...ipContext,
+      device: deviceSummary,
+    },
+  }).catch((telegramError) => {
+    if (process.env.NODE_ENV === "development") {
+      console.warn("Gửi Telegram thông báo thất bại:", telegramError);
+    }
   });
 
   return result.id;

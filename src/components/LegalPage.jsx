@@ -3,14 +3,14 @@ import React from "react";
 const pages = {
   privacy: {
     title: "Privacy Policy",
-    updated: "June 30, 2026",
+    updated: "October 13, 2026",
     intro:
       "This portfolio uses analytics to understand visits and improve the site. It only collects limited visitor and interaction data.",
     sections: [
       {
         title: "Data collected",
         body:
-          "The site may collect anonymous visitor IDs, session IDs, page and section views, device type, browser, referrer, language, screen size, timezone, IP address, and interaction events such as contact clicks, anonymous questions, or CV downloads.",
+          "The site may collect random visitor and session IDs, page and section views, approximate network location, device category, browser, referrer, language, screen size, timezone, IP address, interest score, and interaction events such as contact clicks, anonymous questions, or CV downloads. The site does not use passive browser fingerprinting to identify a person.",
       },
       {
         title: "Facebook profile consent",
@@ -20,7 +20,7 @@ const pages = {
       {
         title: "How data is used",
         body:
-          "Data is used only by the portfolio owner to understand portfolio traffic, identify interested visitors who consented, and improve the portfolio experience.",
+          "Data is used only by the portfolio owner to understand portfolio traffic, rank engagement signals, respond to anonymous messages, and improve the portfolio experience. Network location is approximate; precise GPS is collected only after permission is granted.",
       },
       {
         title: "Contact",

@@ -102,11 +102,19 @@ export const usePortfolioAnalytics = () => {
 
       // 3. Text Copy tracking (sao chép SĐT, email, thông tin liên hệ...)
       const handleCopy = () => {
-        const selection = window.getSelection()?.toString()?.trim();
+        const selectionObject = window.getSelection();
+        const selection = selectionObject?.toString()?.trim();
         if (selection && selection.length >= 3) {
+          const anchorElement = selectionObject?.anchorNode?.nodeType === Node.ELEMENT_NODE
+            ? selectionObject.anchorNode
+            : selectionObject?.anchorNode?.parentElement;
+          const context = anchorElement?.closest?.('section[data-name="contact"]')
+            ? "contact"
+            : "page";
           trackPortfolioEvent("text_copy", {
             textSnippet: selection.slice(0, 80),
             length: selection.length,
+            context,
           });
         }
       };

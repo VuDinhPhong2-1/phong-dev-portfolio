@@ -1,6 +1,6 @@
 import React, { useRef, useState, useCallback } from "react";
 import { useDispatch } from "react-redux";
-import { faArrowRight, faDownload, faEnvelope } from "@fortawesome/free-solid-svg-icons";
+import { faArrowRight, faEnvelope } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import CustomHook from "./CustomHook";
 import MagicCanvas from "./MagicCanvas";
@@ -8,7 +8,6 @@ import { localizedContent } from "../data/localizedContent";
 import { useLanguage } from "../context/LanguageContext";
 import { changeTabActive } from "../redux/actions";
 import { scrollToSection } from "../utils/scrollToSection";
-import { trackPortfolioEvent } from "../services/analyticsTracker";
 
 function Home() {
   const dispatch = useDispatch();
@@ -93,16 +92,6 @@ function Home() {
             <FontAwesomeIcon icon={faArrowRight} />
             {ui.viewProjects}
           </button>
-          <a
-            className="button-secondary magic-btn-secondary"
-            href={profile.cvLink}
-            target="_blank"
-            rel="noopener noreferrer"
-            onClick={() => trackPortfolioEvent("cv_download", { source: "hero" })}
-          >
-            <FontAwesomeIcon icon={faDownload} />
-            {ui.downloadCv}
-          </a>
           <button type="button" className="button-secondary magic-btn-secondary" onClick={() => jumpTo("contact")}>
             <FontAwesomeIcon icon={faEnvelope} />
             {ui.contactMe}

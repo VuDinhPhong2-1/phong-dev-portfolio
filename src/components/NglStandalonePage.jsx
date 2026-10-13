@@ -24,10 +24,14 @@ import {
   subscribeToMyQuestions,
 } from "../services/nglNotificationService";
 import { NGL_PROMPTS } from "../data/nglPrompts";
+import { NGL_TOPICS } from "../data/nglTopics";
 import NglWall from "./NglWall";
 import MagicCanvas from "./MagicCanvas";
+import NglCelebration from "./NglCelebration";
+import { usePortfolioAnalytics } from "../hooks/usePortfolioAnalytics";
 
 export default function NglStandalonePage() {
+  usePortfolioAnalytics();
   const [activeTab, setActiveTab] = useState("ask");
   const [alias, setAlias] = useState("");
   const [contact, setContact] = useState("");
@@ -37,6 +41,8 @@ export default function NglStandalonePage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [message, setMessage] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
+  const [website, setWebsite] = useState("");
+  const [showCelebration, setShowCelebration] = useState(false);
   const [copiedLink, setCopiedLink] = useState(false);
   const [notifPermission, setNotifPermission] = useState(
     typeof window !== "undefined" && "Notification" in window
@@ -114,11 +120,14 @@ export default function NglStandalonePage() {
         question: question.trim(),
         tag,
         keepPrivate,
+        website,
       });
 
       setQuestion("");
       setContact("");
       setKeepPrivate(false);
+      setShowCelebration(true);
+      window.setTimeout(() => setShowCelebration(false), 2200);
       setMyQuestions(getUserQuestions());
       setMessage(
         keepPrivate
@@ -189,11 +198,11 @@ export default function NglStandalonePage() {
             Vũ Đình Phong <span className="ngl-handle">@phongdev</span>
           </h1>
           <p className="ngl-profile-bio">
-            Hỏi bất cứ điều gì ẩn danh 100% 💬 | Nhận câu trả lời trực tiếp từ Phong
+            Hỏi bất cứ điều gì mà không cần đăng nhập 💬 | Nhận câu trả lời trực tiếp từ Phong
           </p>
 
           <div className="ngl-pills-row">
-            <span className="ngl-pill-item">🔒 Hoàn toàn ẩn danh</span>
+            <span className="ngl-pill-item">🔒 Không yêu cầu danh tính</span>
             <span className="ngl-pill-item">⚡ Nhận tin ngay khi có phản hồi</span>
           </div>
         </section>
@@ -237,6 +246,7 @@ export default function NglStandalonePage() {
         {/* Tab 1: Ask Form */}
         {activeTab === "ask" && (
           <div className="ngl-card ngl-standalone-card">
+            <NglCelebration visible={showCelebration} />
             <div className="ngl-prompt-bar">
               <button type="button" className="ngl-dice-btn" onClick={handleRollDice}>
                 <FontAwesomeIcon icon={faDice} />
@@ -246,6 +256,28 @@ export default function NglStandalonePage() {
             </div>
 
             <form onSubmit={handleSubmit} className="ngl-form">
+              <div className="ngl-topic-group" aria-label="Chọn chủ đề tin nhắn">
+                <span className="ngl-topic-label">Chọn chủ đề nhanh</span>
+                <div className="ngl-topic-pills">
+                  {NGL_TOPICS.map((topic) => {
+                    const value = `${topic.emoji} ${topic.label}`;
+                    return (
+                      <button
+                        key={topic.id}
+                        type="button"
+                        className={`ngl-topic-pill ${tag === value ? "active" : ""}`}
+                        onClick={() => {
+                          if (topic.id === "random") handleRollDice();
+                          else setTag(value);
+                        }}
+                      >
+                        <span>{topic.emoji}</span> {topic.label}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
               <div className="ngl-field">
                 <textarea
                   ref={questionInputRef}
@@ -297,6 +329,17 @@ export default function NglStandalonePage() {
                 </div>
               </label>
 
+              <label className="ngl-honeypot" aria-hidden="true">
+                Website
+                <input
+                  type="text"
+                  value={website}
+                  onChange={(event) => setWebsite(event.target.value)}
+                  tabIndex={-1}
+                  autoComplete="off"
+                />
+              </label>
+
               {errorMessage && <div className="ngl-alert-error">{errorMessage}</div>}
               {message && <div className="ngl-alert-success">{message}</div>}
 
@@ -311,7 +354,7 @@ export default function NglStandalonePage() {
 
               <div className="ngl-privacy-hint">
                 <FontAwesomeIcon icon={faShieldHalved} />
-                <span>Bảo mật 100%: Danh tính của bạn luôn được ẩn danh hoàn toàn.</span>
+                <span>Không cần đăng nhập; dữ liệu kỹ thuật giới hạn được xử lý theo Chính sách quyền riêng tư.</span>
               </div>
             </form>
           </div>

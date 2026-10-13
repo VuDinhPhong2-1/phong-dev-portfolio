@@ -11,6 +11,26 @@ service cloud.firestore {
         request.auth.token.email in ['vudinhphong.261001@gmail.com', 'vudinhphong.26001@gmail.com'];
     }
 
+    function isValidPublicQuestionSubmission() {
+      return request.resource.data.alias is string &&
+        request.resource.data.alias.size() > 0 &&
+        request.resource.data.alias.size() <= 40 &&
+        request.resource.data.contact is string &&
+        request.resource.data.contact.size() <= 80 &&
+        request.resource.data.question is string &&
+        request.resource.data.question.size() > 0 &&
+        request.resource.data.question.size() <= 600 &&
+        request.resource.data.tag is string &&
+        request.resource.data.tag.size() <= 40 &&
+        request.resource.data.keepPrivate is bool &&
+        request.resource.data.status == 'pending' &&
+        request.resource.data.answer == '' &&
+        request.resource.data.isPublic == false &&
+        request.resource.data.visitorId is string &&
+        request.resource.data.sessionId is string &&
+        request.resource.data.moderationFlags is list;
+    }
+
     match /visitors/{visitorId} {
       allow create, update: if request.resource.data.visitorId == visitorId;
       allow read, delete: if isAdmin();
@@ -38,9 +58,7 @@ service cloud.firestore {
     }
 
     match /questions/{questionId} {
-      allow create: if request.resource.data.question is string &&
-        request.resource.data.alias is string &&
-        request.resource.data.contact is string;
+      allow create: if isAdmin() || isValidPublicQuestionSubmission();
       allow read: if isAdmin();
       allow update, delete: if isAdmin();
     }

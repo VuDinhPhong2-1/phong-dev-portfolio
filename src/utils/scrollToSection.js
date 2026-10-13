@@ -1,6 +1,6 @@
 export function scrollToSection(value) {
   const section = document.querySelector(`[data-name="${value}"]`);
-  const header = document.querySelector("header");
+  const header = document.querySelector(".portfolio-header");
 
   if (!section) {
     return;

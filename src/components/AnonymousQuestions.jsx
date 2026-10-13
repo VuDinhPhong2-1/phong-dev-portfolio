@@ -13,9 +13,9 @@ import {
   subscribeNglPrompts,
 } from "../services/questionService";
 import { NGL_PROMPTS } from "../data/nglPrompts";
+import { NGL_TOPICS } from "../data/nglTopics";
 import NglWall from "./NglWall";
-
-const RATE_LIMIT_KEY = "ngl_submit_rate_limit";
+import NglCelebration from "./NglCelebration";
 
 function AnonymousQuestions() {
   const [alias, setAlias] = useState("");
@@ -26,6 +26,8 @@ function AnonymousQuestions() {
   const [keepPrivate, setKeepPrivate] = useState(false);
   const [message, setMessage] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
+  const [website, setWebsite] = useState("");
+  const [showCelebration, setShowCelebration] = useState(false);
   const [answeredList, setAnsweredList] = useState([]);
   const [promptsList, setPromptsList] = useState(NGL_PROMPTS);
   const questionInputRef = useRef(null);
@@ -60,28 +62,6 @@ function AnonymousQuestions() {
     }
   };
 
-  const checkRateLimit = () => {
-    try {
-      const raw = localStorage.getItem(RATE_LIMIT_KEY);
-      const data = raw ? JSON.parse(raw) : { count: 0, time: Date.now() };
-      const now = Date.now();
-
-      if (now - data.time > 3 * 60 * 1000) {
-        localStorage.setItem(RATE_LIMIT_KEY, JSON.stringify({ count: 1, time: now }));
-        return true;
-      }
-      if (data.count >= 4) return false;
-
-      localStorage.setItem(
-        RATE_LIMIT_KEY,
-        JSON.stringify({ count: data.count + 1, time: data.time })
-      );
-      return true;
-    } catch {
-      return true;
-    }
-  };
-
   const handleSubmit = async (event) => {
     event.preventDefault();
     setMessage("");
@@ -89,11 +69,6 @@ function AnonymousQuestions() {
 
     if (!question.trim()) {
       setErrorMessage("Bạn hãy nhập câu hỏi trước nhé.");
-      return;
-    }
-
-    if (!checkRateLimit()) {
-      setErrorMessage("Bạn đang gửi hơi nhanh, hãy đợi 1-2 phút rồi gửi tiếp nhé!");
       return;
     }
 
@@ -106,11 +81,14 @@ function AnonymousQuestions() {
         question: question.trim(),
         tag,
         keepPrivate,
+        website,
       });
 
       setQuestion("");
       setContact("");
       setKeepPrivate(false);
+      setShowCelebration(true);
+      window.setTimeout(() => setShowCelebration(false), 2200);
       setMessage(
         keepPrivate
           ? "🔒 Tin nhắn riêng tư đã được gửi an toàn tới Phong! Câu hỏi này sẽ không hiển thị công khai."
@@ -126,6 +104,7 @@ function AnonymousQuestions() {
   return (
     <div className="ngl-container">
       <article className="ngl-card">
+        <NglCelebration visible={showCelebration} />
         <div className="ngl-header">
           <div className="ngl-badge">
             <FontAwesomeIcon icon={faUserSecret} />
@@ -133,11 +112,33 @@ function AnonymousQuestions() {
           </div>
           <h3>Gửi câu hỏi hoặc tâm sự bí mật</h3>
           <p>
-            100% ẩn danh, không cần đăng nhập. Phong sẽ nhận được và trả lời ở Bức tường bên dưới!
+            Không cần đăng nhập hay tên thật. Phong sẽ nhận được và trả lời ở Bức tường bên dưới!
           </p>
         </div>
 
         <form className="ngl-form" onSubmit={handleSubmit}>
+          <div className="ngl-topic-group" aria-label="Chọn chủ đề tin nhắn">
+            <span className="ngl-topic-label">Bạn muốn nhắn về điều gì?</span>
+            <div className="ngl-topic-pills">
+              {NGL_TOPICS.map((topic) => {
+                const value = `${topic.emoji} ${topic.label}`;
+                return (
+                  <button
+                    key={topic.id}
+                    type="button"
+                    className={`ngl-topic-pill ${tag === value ? "active" : ""}`}
+                    onClick={() => {
+                      if (topic.id === "random") handleRollDice();
+                      else setTag(value);
+                    }}
+                  >
+                    <span>{topic.emoji}</span> {topic.label}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
           <div className="ngl-prompt-bar">
             <button
               type="button"
@@ -202,9 +203,20 @@ function AnonymousQuestions() {
             </div>
           </label>
 
+          <label className="ngl-honeypot" aria-hidden="true">
+            Website
+            <input
+              type="text"
+              value={website}
+              onChange={(event) => setWebsite(event.target.value)}
+              tabIndex={-1}
+              autoComplete="off"
+            />
+          </label>
+
           <div className="ngl-privacy-hint">
             <FontAwesomeIcon icon={faShieldHalved} />
-            <span>Danh tính của bạn được giữ kín hoàn toàn.</span>
+            <span>Không yêu cầu danh tính; dữ liệu kỹ thuật giới hạn được xử lý theo Chính sách quyền riêng tư.</span>
           </div>
 
           {message ? <div className="ngl-alert-success">{message}</div> : null}

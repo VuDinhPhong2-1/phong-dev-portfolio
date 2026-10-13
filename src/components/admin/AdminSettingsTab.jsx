@@ -5,13 +5,17 @@ import {
   faCogs,
   faDownload,
   faEnvelope,
+  faPaperPlane,
   faShieldHalved,
 } from "@fortawesome/free-solid-svg-icons";
 import { getNotifyEmail, sendTestNotificationEmail } from "../../services/emailNotificationService";
+import { sendTestTelegramNotification } from "../../services/telegramNotificationService";
 
 export default function AdminSettingsTab({ questions = [], showToast }) {
   const [isSending, setIsSending] = useState(false);
   const [testResult, setTestResult] = useState("");
+  const [isTestingTelegram, setIsTestingTelegram] = useState(false);
+  const [telegramResult, setTelegramResult] = useState("");
 
   const handleTestEmail = async () => {
     setIsSending(true);
@@ -28,6 +32,20 @@ export default function AdminSettingsTab({ questions = [], showToast }) {
       setTestResult(`❌ Lỗi: ${err.message}`);
     } finally {
       setIsSending(false);
+    }
+  };
+
+  const handleTestTelegram = async () => {
+    setIsTestingTelegram(true);
+    setTelegramResult("");
+    try {
+      await sendTestTelegramNotification();
+      setTelegramResult("✅ Telegram Bot đã nhận tin nhắn kiểm tra.");
+      showToast("✈️ Đã gửi Telegram test thành công!");
+    } catch (error) {
+      setTelegramResult(`⚠️ ${error.message}`);
+    } finally {
+      setIsTestingTelegram(false);
     }
   };
 
@@ -55,6 +73,24 @@ export default function AdminSettingsTab({ questions = [], showToast }) {
       </div>
 
       <div style={{ display: "grid", gap: 20 }}>
+        <div className="adm-question-card">
+          <h3 style={{ fontSize: 16, margin: "0 0 8px", color: "#fff", display: "flex", alignItems: "center", gap: 8 }}>
+            <FontAwesomeIcon icon={faPaperPlane} style={{ color: "#38bdf8" }} />
+            Telegram Bot thông báo tức thì
+          </h3>
+          <p style={{ color: "#94a3b8", fontSize: 14, margin: "0 0 16px" }}>
+            Cấu hình <code>TELEGRAM_BOT_TOKEN</code> và <code>TELEGRAM_CHAT_ID</code> trên Vercel để nhận tin NGL mới.
+          </p>
+          <button type="button" className="adm-btn-primary" onClick={handleTestTelegram} disabled={isTestingTelegram}>
+            {isTestingTelegram ? "Đang kiểm tra..." : "Gửi Telegram test"}
+          </button>
+          {telegramResult && (
+            <div style={{ marginTop: 12, padding: "10px 14px", borderRadius: 8, background: "rgba(56,189,248,0.1)", color: "#bae6fd", fontSize: 13 }}>
+              {telegramResult}
+            </div>
+          )}
+        </div>
+
         <div className="adm-question-card">
           <h3 style={{ fontSize: 16, margin: "0 0 8px", color: "#fff", display: "flex", alignItems: "center", gap: 8 }}>
             <FontAwesomeIcon icon={faEnvelope} style={{ color: "#818cf8" }} />

@@ -2,16 +2,24 @@ import {
   addDoc,
   collection,
   doc,
+  increment,
   serverTimestamp,
   setDoc,
   updateDoc,
 } from "firebase/firestore";
 
 import { db, isFirebaseConfigured } from "./firebase";
-import { readOrCreatePersistentItem } from "../utils/persistentStorage";
+import {
+  getPersistentItem,
+  readOrCreatePersistentItem,
+  setPersistentItem,
+} from "../utils/persistentStorage";
+import { sendHotLeadTelegramNotification } from "./telegramNotificationService";
 
 const VISITOR_ID_KEY = "portfolio_visitor_id";
 const VISITOR_CREATED_AT_KEY = "portfolio_visitor_created_at";
+const VISITOR_COUNT_KEY = "portfolio_visit_count";
+const INTEREST_SCORE_KEY = "portfolio_interest_score";
 
 const SESSION_ID_KEY = "portfolio_session_id";
 const SESSION_CREATED_AT_KEY = "portfolio_session_created_at";
@@ -25,6 +33,75 @@ let currentVisitorCreatedAt = null;
 let currentSessionCreatedAt = null;
 
 let currentVisitorProfile = null;
+let currentVisitCount = 1;
+let currentInterestScore = 0;
+let currentSessionIsNew = false;
+
+const INTEREST_EVENT_KEY = "portfolio_interest_events";
+
+export const INTEREST_LEVELS = {
+  hot: { min: 65, label: "Rất quan tâm", icon: "🔥" },
+  engaged: { min: 35, label: "Khá quan tâm", icon: "⚡" },
+  casual: { min: 0, label: "Ghé xem", icon: "👀" },
+};
+
+export const getInterestLevel = (score = 0) => {
+  if (score >= INTEREST_LEVELS.hot.min) return "hot";
+  if (score >= INTEREST_LEVELS.engaged.min) return "engaged";
+  return "casual";
+};
+
+export const getCurrentInterestScore = () => currentInterestScore;
+
+const getScoringRule = (type, metadata = {}) => {
+  const section = String(metadata.section || "").toLowerCase();
+  const channel = String(metadata.channel || "").toLowerCase();
+
+  if (type === "page_view") return { points: 5, key: "page_view" };
+  if (type === "section_dwell" && section === "about" && Number(metadata.durationSeconds) >= 30) {
+    return { points: 15, key: "about_dwell_30" };
+  }
+  if (type === "section_view" && ["experience", "projects"].includes(section)) {
+    return { points: 10, key: `section_${section}` };
+  }
+  if (type === "scroll_depth" && Number(metadata.depth) >= 75) {
+    return { points: 10, key: "scroll_75" };
+  }
+  if (type === "cv_download") return { points: 25, key: "cv_download" };
+  if (
+    type === "contact_click" &&
+    ["email", "phone", "điện", "zalo"].some((value) => channel.includes(value))
+  ) {
+    return { points: 20, key: `contact_${channel || "direct"}` };
+  }
+  if (type === "text_copy" && metadata.context === "contact") {
+    return { points: 20, key: "contact_copy" };
+  }
+  if (["floating_bubble_click", "header_ngl_click"].includes(type)) {
+    return { points: 15, key: "open_ngl" };
+  }
+  if (type === "anonymous_question_submitted") {
+    return { points: 30, key: "ngl_submitted" };
+  }
+  if (type === "return_visit") {
+    const visitCount = Number(metadata.visitCount) || 1;
+    return { points: visitCount >= 3 ? 25 : 15, key: `return_visit_${visitCount}` };
+  }
+  return { points: 0, key: "" };
+};
+
+const takeScoreOncePerSession = (rule) => {
+  if (!rule.points || !rule.key || typeof sessionStorage === "undefined") return 0;
+  try {
+    const applied = new Set(JSON.parse(sessionStorage.getItem(INTEREST_EVENT_KEY) || "[]"));
+    if (applied.has(rule.key)) return 0;
+    applied.add(rule.key);
+    sessionStorage.setItem(INTEREST_EVENT_KEY, JSON.stringify([...applied]));
+    return rule.points;
+  } catch {
+    return rule.points;
+  }
+};
 
 // IP context
 let currentIpContext = null;
@@ -248,15 +325,19 @@ export const getPortfolioIpContext = async () => {
 
       const data = await response.json();
 
-      const ipAddress = String(
-        data.ipAddress || ""
-      ).trim();
+      const ipAddress = String(data.ipAddress || "").trim();
+      const latitude = data.latitude === null || data.latitude === "" ? null : Number(data.latitude);
+      const longitude = data.longitude === null || data.longitude === "" ? null : Number(data.longitude);
 
-      currentIpContext = ipAddress
-        ? {
-          ipAddress,
-        }
-        : {};
+      currentIpContext = {
+        ...(ipAddress ? { ipAddress } : {}),
+        city: String(data.city || "").trim() || null,
+        region: String(data.region || "").trim() || null,
+        country: String(data.country || "").trim() || null,
+        latitude: latitude !== null && Number.isFinite(latitude) ? latitude : null,
+        longitude: longitude !== null && Number.isFinite(longitude) ? longitude : null,
+        locationSource: data.locationSource || "vercel_ip_headers",
+      };
 
       return currentIpContext;
     })
@@ -445,12 +526,23 @@ const ensureIds = () => {
     () => new Date().toISOString()
   );
 
-  currentSessionId =
-    readOrCreateLocalValue(
-      sessionStorage,
-      SESSION_ID_KEY,
-      () => createId("session")
-    );
+  const existingSessionId = sessionStorage.getItem(SESSION_ID_KEY);
+  if (!currentSessionId) {
+    currentSessionIsNew = !existingSessionId;
+  }
+
+  currentSessionId = readOrCreateLocalValue(
+    sessionStorage,
+    SESSION_ID_KEY,
+    () => createId("session")
+  );
+
+  const storedVisitCount = Math.max(0, Number(getPersistentItem(VISITOR_COUNT_KEY)) || 0);
+  currentInterestScore = Math.max(0, Number(getPersistentItem(INTEREST_SCORE_KEY)) || 0);
+  currentVisitCount = existingSessionId ? Math.max(1, storedVisitCount) : storedVisitCount + 1;
+  if (!existingSessionId) {
+    setPersistentItem(VISITOR_COUNT_KEY, String(currentVisitCount));
+  }
 
   currentSessionCreatedAt =
     readOrCreateLocalValue(
@@ -490,29 +582,9 @@ export const getSenderDeviceSummary = () => {
 };
 
 export const getSenderFingerprint = () => {
-  if (typeof window === "undefined") return "fp_none";
-  try {
-    const components = [
-      navigator.userAgent || "",
-      navigator.language || "",
-      window.screen?.width || 0,
-      window.screen?.height || 0,
-      window.screen?.colorDepth || 0,
-      navigator.hardwareConcurrency || 0,
-      typeof Intl !== "undefined" && Intl.DateTimeFormat
-        ? Intl.DateTimeFormat().resolvedOptions()?.timeZone || ""
-        : "",
-    ];
-    const str = components.join("|||");
-    let hash = 0;
-    for (let i = 0; i < str.length; i++) {
-      hash = (hash << 5) - hash + str.charCodeAt(i);
-      hash |= 0;
-    }
-    return "fp_" + Math.abs(hash).toString(36);
-  } catch (e) {
-    return "fp_fallback";
-  }
+  // Backwards-compatible sender key without passive browser fingerprinting.
+  // The random visitor ID is already disclosed in the privacy page and can be reset by the visitor.
+  return currentVisitorId ? `vid_${currentVisitorId}` : "fp_none";
 };
 
 /* =========================================================
@@ -557,6 +629,8 @@ export const formatActionSummary = (type, metadata = {}) => {
       return "Bỏ qua đặt biệt danh";
     case "anonymous_question_submitted":
       return `Gửi câu hỏi NGL: ${metadata.profileName || "ẩn danh"}`;
+    case "return_visit":
+      return `Quay lại portfolio lần ${metadata.visitCount || 2}`;
     default:
       return type.replace(/_/g, " ");
   }
@@ -580,6 +654,20 @@ export const trackPortfolioEvent = async (
 
   try {
     const actionLabel = formatActionSummary(type, metadata);
+    const scoreDelta = takeScoreOncePerSession(getScoringRule(type, metadata));
+    if (scoreDelta > 0) {
+      const previousScore = currentInterestScore;
+      currentInterestScore += scoreDelta;
+      setPersistentItem(INTEREST_SCORE_KEY, String(currentInterestScore));
+      if (previousScore < INTEREST_LEVELS.hot.min && currentInterestScore >= INTEREST_LEVELS.hot.min) {
+        sendHotLeadTelegramNotification({
+          score: currentInterestScore,
+          action: actionLabel,
+          ipContext: getCachedIpContext(),
+          device: getSenderDeviceSummary(),
+        }).catch(() => {});
+      }
+    }
 
     await addDoc(
       collection(db, "events"),
@@ -595,6 +683,8 @@ export const trackPortfolioEvent = async (
 
         createdAt:
           serverTimestamp(),
+
+        scoreDelta,
 
         ...getClientContext(),
 
@@ -615,11 +705,30 @@ export const trackPortfolioEvent = async (
       sessionUpdates.maxScrollDepth = metadata.depth;
     }
 
-    setDoc(
-      doc(db, "sessions", currentSessionId),
-      sessionUpdates,
-      { merge: true }
-    ).catch(() => {});
+    if (scoreDelta > 0) {
+      sessionUpdates.interestScore = increment(scoreDelta);
+      sessionUpdates.lastScoreDelta = scoreDelta;
+    }
+
+    const scoreWrites = [
+      setDoc(doc(db, "sessions", currentSessionId), sessionUpdates, { merge: true }),
+    ];
+
+    if (scoreDelta > 0) {
+      scoreWrites.push(
+        setDoc(
+          doc(db, "visitors", currentVisitorId),
+          {
+            visitorId: currentVisitorId,
+            interestScore: increment(scoreDelta),
+            lastScoreAt: serverTimestamp(),
+          },
+          { merge: true }
+        )
+      );
+    }
+
+    Promise.all(scoreWrites).catch(() => {});
   } catch (error) {
     if (
       process.env.NODE_ENV ===
@@ -869,6 +978,8 @@ export const startPortfolioTracking =
             lastSessionId:
               currentSessionId,
 
+            visitCount: currentVisitCount,
+
             onlineWindowMs:
               ONLINE_WINDOW_MS,
 
@@ -907,6 +1018,8 @@ export const startPortfolioTracking =
             isActive:
               true,
 
+            visitNumber: currentVisitCount,
+
             onlineWindowMs:
               ONLINE_WINDOW_MS,
 
@@ -919,6 +1032,10 @@ export const startPortfolioTracking =
           }
         ),
       ]);
+
+      if (currentSessionIsNew && currentVisitCount >= 2) {
+        await trackPortfolioEvent("return_visit", { visitCount: currentVisitCount });
+      }
 
       // page_view sẽ tự lấy location
       await trackPortfolioEvent(

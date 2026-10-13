@@ -1,8 +1,6 @@
 const commonLinks = {
   avatar:
     "https://res.cloudinary.com/dk0lhapty/image/upload/v1741073555/z5994467109260_01a414be5deb1fc3b89ce98b89286cc5_qnprwh.jpg",
-  cvLink:
-    "https://drive.google.com/file/d/1f73MIqPAOqs89jdyQJRXGV9HO_FBL9gO/view?usp=sharing",
 };
 
 const projectImages = {
@@ -133,7 +131,6 @@ export const localizedContent = {
       brandRole: "Coding Online Teacher & Full-stack Developer",
       portfolio: "Portfolio",
       viewProjects: "View Projects",
-      downloadCv: "Download CV",
       contactMe: "Contact Me",
       companyWebsite: "Company Website",
       roleFocus: "Role Focus",
@@ -143,7 +140,6 @@ export const localizedContent = {
       backend: "Backend",
       tools: "Tools",
       githubProfile: "GitHub Profile",
-      contactChannels: "Contact channels",
       heroProofLabel: "MOS 2019",
       heroProofText: "Teaching + Full-stack development + Education technology",
     },
@@ -370,7 +366,6 @@ export const localizedContent = {
       brandRole: "Giáo viên Coding Online & Lập trình viên Full-stack",
       portfolio: "Hồ sơ",
       viewProjects: "Xem dự án",
-      downloadCv: "Tải CV",
       contactMe: "Liên hệ",
       companyWebsite: "Website công ty",
       roleFocus: "Vai trò chính",
@@ -380,7 +375,6 @@ export const localizedContent = {
       backend: "Backend",
       tools: "Công cụ",
       githubProfile: "GitHub cá nhân",
-      contactChannels: "Kênh liên hệ",
       heroProofLabel: "MOS 2019",
       heroProofText: "Giảng dạy + Phát triển full-stack + Công nghệ giáo dục",
     },

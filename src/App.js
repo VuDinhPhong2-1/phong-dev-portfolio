@@ -2,9 +2,10 @@ import { useEffect, useState } from "react";
 import "./App.css";
 import "./magic.css";
 import "./ngl.css";
+import "./portfolio.css";
 
 import Header from "./components/Header";
-import Home from "./components/Home";
+import Home from "./components/HomeOptimized";
 import About from "./components/About";
 import Education from "./components/Education";
 import Skills from "./components/Skills";
@@ -30,7 +31,7 @@ function PortfolioContent() {
   usePortfolioAnalytics();
 
   return (
-    <main>
+    <main className="portfolio-shell">
       <Header />
       <Home />
       <About />

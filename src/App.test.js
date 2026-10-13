@@ -1,7 +1,12 @@
-import { render, screen, act } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import { Provider } from "react-redux";
 import App from "./App";
 import store from "./redux/store";
+
+beforeEach(() => {
+  window.location.hash = "";
+  window.scrollTo = jest.fn();
+});
 
 test("renders updated portfolio headline", () => {
   render(
@@ -28,6 +33,53 @@ test("renders NGL link that targets a new tab", () => {
   const nglLinks = screen.getAllByRole("link", { name: /hỏi ẩn danh/i });
   expect(nglLinks.length).toBeGreaterThan(0);
   expect(nglLinks[0]).toHaveAttribute("target", "_blank");
+});
+
+test("hero calls to action navigate to projects and contact", () => {
+  render(
+    <Provider store={store}>
+      <App />
+    </Provider>,
+  );
+
+  fireEvent.click(screen.getByLabelText("Switch to English"));
+  fireEvent.click(screen.getByRole("button", { name: /view projects/i }));
+  fireEvent.click(screen.getByRole("button", { name: /contact me/i }));
+
+  expect(window.scrollTo).toHaveBeenCalledTimes(2);
+  expect(window.scrollTo).toHaveBeenLastCalledWith({ top: 0, behavior: "smooth" });
+});
+
+test("switches the portfolio language to English", () => {
+  render(
+    <Provider store={store}>
+      <App />
+    </Provider>,
+  );
+
+  fireEvent.click(screen.getByLabelText("Switch to English"));
+
+  expect(screen.getAllByText(/coding online teacher/i).length).toBeGreaterThan(0);
+  expect(screen.getByRole("button", { name: /view projects/i })).toBeInTheDocument();
+});
+
+test("mobile navigation exposes its expanded state", () => {
+  render(
+    <Provider store={store}>
+      <App />
+    </Provider>,
+  );
+
+  const menuButton = screen.getByRole("button", { name: /open navigation/i });
+  expect(menuButton).toHaveAttribute("aria-expanded", "false");
+
+  fireEvent.click(menuButton);
+
+  expect(screen.getByRole("button", { name: /close navigation/i })).toHaveAttribute(
+    "aria-expanded",
+    "true",
+  );
+  expect(document.getElementById("portfolio-navigation")).toHaveClass("active");
 });
 
 test("renders NGL standalone page when hash is #/ngl", () => {
@@ -74,4 +126,27 @@ test("renders admin view when hash is #/admin", () => {
   ).toBeInTheDocument();
 
   window.location.hash = "";
+});
+
+test("renders privacy and data deletion routes", () => {
+  window.location.hash = "#/privacy";
+
+  const privacyView = render(
+    <Provider store={store}>
+      <App />
+    </Provider>,
+  );
+
+  expect(screen.getByRole("heading", { name: /privacy policy/i, level: 1 })).toBeInTheDocument();
+  privacyView.unmount();
+
+  window.location.hash = "#/data-deletion";
+
+  render(
+    <Provider store={store}>
+      <App />
+    </Provider>,
+  );
+
+  expect(screen.getByRole("heading", { name: /user data deletion/i, level: 1 })).toBeInTheDocument();
 });

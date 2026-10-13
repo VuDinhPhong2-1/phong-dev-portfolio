@@ -1,78 +1,129 @@
 import { useEffect } from "react";
-import { useDispatch, useSelector } from "react-redux";
+import { useDispatch } from "react-redux";
 import { changeTabActive } from "../redux/actions";
 
-const getHeaderOffset = () => {
-  const header = document.querySelector("header");
-  if (!header) {
-    return 120;
-  }
-
-  return header.getBoundingClientRect().height + 32;
+const revealElement = (element) => {
+  element.classList.add("active");
+  element.addEventListener(
+    "transitionend",
+    () => {
+      element.style.willChange = "auto";
+    },
+    { once: true },
+  );
 };
 
-const getActiveSectionName = () => {
-  const anchor = getHeaderOffset();
-  const sections = Array.from(document.querySelectorAll("section[data-name]"));
-  const scrollPosition = window.scrollY + anchor + 12;
-
-  let currentSectionName = sections[0]?.dataset.name;
-  sections.forEach((section) => {
-    if (section.offsetTop <= scrollPosition) {
-      currentSectionName = section.dataset.name;
-    }
-  });
-
-  return currentSectionName;
-};
-
-const CustomHook = (refTab = null, refList = null) => {
-  const activeTab = useSelector((state) => state.activeTab);
+/**
+ * Reveals a section's animated children once and, for the hero instance, keeps
+ * the navigation in sync through a single IntersectionObserver.
+ */
+const CustomHook = (refTab = null, refList = null, trackActiveSections = false) => {
   const dispatch = useDispatch();
 
   useEffect(() => {
-    const section = refTab?.current;
-    if (!section) {
+    if (!refTab?.current) return undefined;
+
+    const animatedElements = Array.from(new Set(refList?.current?.filter(Boolean) || []));
+    if (refList) refList.current = animatedElements;
+    const pendingElements = animatedElements.filter(
+      (element) => !element.classList.contains("active"),
+    );
+
+    // Do not hide content in tests, older browsers, or reduced-motion mode.
+    if (
+      typeof IntersectionObserver === "undefined" ||
+      window.matchMedia?.("(prefers-reduced-motion: reduce)").matches
+    ) {
+      pendingElements.forEach(revealElement);
       return undefined;
     }
 
-    const animatedElements = refList
-      ? Array.from(new Set(refList.current.filter(Boolean)))
-      : [];
+    const revealObserver = new IntersectionObserver(
+      (entries, observer) => {
+        entries.forEach((entry) => {
+          if (!entry.isIntersecting) return;
 
-    animatedElements.forEach((element) => {
-      element.classList.add("animation");
-    });
+          revealElement(entry.target);
+          observer.unobserve(entry.target);
+        });
+      },
+      { rootMargin: "0px 0px -12% 0px", threshold: 0.15 },
+    );
 
-    const revealOnScroll = () => {
-      animatedElements.forEach((element) => {
-        const elementTop = element.getBoundingClientRect().top;
-        if (elementTop <= window.innerHeight * 0.88) {
-          element.classList.add("active");
-        } else {
-          element.classList.remove("active");
-        }
-      });
+    pendingElements.forEach((element) => revealObserver.observe(element));
+
+    return () => revealObserver.disconnect();
+  });
+
+  useEffect(() => {
+    if (!trackActiveSections) return undefined;
+
+    const sections = Array.from(document.querySelectorAll("section[data-name]"));
+    if (!sections.length) return undefined;
+
+    let activeSectionName = "";
+    const activate = (name) => {
+      if (!name || name === activeSectionName) return;
+      activeSectionName = name;
+      dispatch(changeTabActive(name));
     };
 
-    const updateActiveSection = () => {
-      const currentSectionName = getActiveSectionName();
-      if (currentSectionName && currentSectionName !== activeTab) {
-        dispatch(changeTabActive(currentSectionName));
-      }
-    };
+    // Compatibility path: still only one passive, RAF-throttled listener.
+    if (typeof IntersectionObserver === "undefined") {
+      let frameId = null;
+      const updateFromScroll = () => {
+        frameId = null;
+        const headerHeight = document.querySelector(".portfolio-header")?.offsetHeight || 88;
+        const marker = headerHeight + window.innerHeight * 0.2;
+        let current = sections[0];
 
-    revealOnScroll();
-    updateActiveSection();
+        sections.forEach((section) => {
+          if (section.getBoundingClientRect().top <= marker) current = section;
+        });
+        activate(current.dataset.name);
+      };
+      const onScroll = () => {
+        if (frameId === null) frameId = window.requestAnimationFrame(updateFromScroll);
+      };
 
-    const onScroll = () => {
-      revealOnScroll();
-      updateActiveSection();
-    };
+      updateFromScroll();
+      window.addEventListener("scroll", onScroll, { passive: true });
+      return () => {
+        window.removeEventListener("scroll", onScroll);
+        if (frameId !== null) window.cancelAnimationFrame(frameId);
+      };
+    }
 
-    window.addEventListener("scroll", onScroll);
-    return () => window.removeEventListener("scroll", onScroll);
-  }, [activeTab, dispatch, refList, refTab]);
+    const headerHeight = Math.ceil(
+      document.querySelector(".portfolio-header")?.getBoundingClientRect().height || 88,
+    );
+    const visibleSections = new Map();
+    const sectionObserver = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) visibleSections.set(entry.target, entry);
+          else visibleSections.delete(entry.target);
+        });
+
+        const closest = Array.from(visibleSections.values()).sort(
+          (a, b) =>
+            Math.abs(a.boundingClientRect.top - headerHeight) -
+            Math.abs(b.boundingClientRect.top - headerHeight),
+        )[0];
+
+        if (closest) activate(closest.target.dataset.name);
+      },
+      {
+        rootMargin: `-${headerHeight}px 0px -55% 0px`,
+        threshold: [0, 0.15, 0.35],
+      },
+    );
+
+    sections.forEach((section) => sectionObserver.observe(section));
+    activate(sections[0].dataset.name);
+
+    return () => sectionObserver.disconnect();
+  }, [dispatch, trackActiveSections]);
 };
 
 export default CustomHook;

@@ -57,19 +57,10 @@ function Contacts() {
         <div className="contact-card contact-card-main animation" ref={(el) => el && animatedRefs.current.push(el)}>
           <h3>{profile.name}</h3>
           <p>{profile.role}</p>
-          <div className="project-actions">
-            <a
-              className="button-primary"
-              href={profile.cvLink}
-              target="_blank"
-              rel="noopener noreferrer"
-              onClick={() => trackPortfolioEvent("cv_download", { source: "contact" })}
-            >
-              {ui.downloadCv}
-            </a>
-            {profile.github && (
+          {profile.github && (
+            <div className="project-actions">
               <a
-                className="button-secondary"
+                className="button-primary"
                 href={profile.github}
                 target="_blank"
                 rel="noopener noreferrer"
@@ -77,8 +68,8 @@ function Contacts() {
               >
                 {ui.githubProfile}
               </a>
-            )}
-          </div>
+            </div>
+          )}
         </div>
 
         <div className="contact-list">

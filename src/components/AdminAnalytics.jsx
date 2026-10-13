@@ -3,6 +3,7 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faChartLine,
   faCogs,
+  faFire,
   faLightbulb,
   faMicrochip,
   faReply,
@@ -25,6 +26,7 @@ import AdminPromptsTab from "./admin/AdminPromptsTab";
 import AdminLiveDevicesTab from "./admin/AdminLiveDevicesTab";
 import AdminAnalyticsTab from "./admin/AdminAnalyticsTab";
 import AdminSettingsTab from "./admin/AdminSettingsTab";
+import AdminLeadsTab from "./admin/AdminLeadsTab";
 import NglStoryModal from "./NglStoryModal";
 
 const ONLINE_WINDOW_MS = 2 * 60 * 1000;
@@ -186,6 +188,16 @@ export default function AdminAnalytics() {
         <nav className="adm-tabs-row">
           <button
             type="button"
+            className={`adm-tab-button ${activeTab === "leads" ? "is-active" : ""}`}
+            onClick={() => setActiveTab("leads")}
+          >
+            <FontAwesomeIcon icon={faFire} />
+            Khách quan tâm
+            <span className="adm-tab-pill">{visitors.filter((item) => (item.interestScore || 0) >= 65).length} hot</span>
+          </button>
+
+          <button
+            type="button"
             className={`adm-tab-button ${activeTab === "questions" ? "is-active" : ""}`}
             onClick={() => setActiveTab("questions")}
           >
@@ -238,6 +250,16 @@ export default function AdminAnalytics() {
       </div>
 
       <main className="adm-content-container">
+        {activeTab === "leads" && (
+          <AdminLeadsTab
+            visitors={visitors}
+            sessions={sessions}
+            events={events}
+            senderNotes={senderNotes}
+            showToast={showToast}
+          />
+        )}
+
         {activeTab === "questions" && (
           <AdminQuestionsTab
             questions={questions}

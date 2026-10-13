@@ -42,13 +42,13 @@ function Header() {
   };
 
   return (
-    <header>
+    <header className="portfolio-header">
       <button type="button" className="brand" onClick={() => handleChangeTab("hero")}>
         <strong>Vu Dinh Phong</strong>
         <span>{content.ui.brandRole}</span>
       </button>
 
-      <nav className={isOpen ? "active" : ""}>
+      <nav id="portfolio-navigation" className={isOpen ? "active" : ""}>
         {content.nav.map((item) => (
           <button
             type="button"
@@ -91,7 +91,14 @@ function Header() {
         </div>
       </nav>
 
-      <button type="button" className="icon-bar" onClick={() => setIsOpen((prev) => !prev)}>
+      <button
+        type="button"
+        className="icon-bar"
+        aria-label={isOpen ? "Close navigation" : "Open navigation"}
+        aria-controls="portfolio-navigation"
+        aria-expanded={isOpen}
+        onClick={() => setIsOpen((prev) => !prev)}
+      >
         <FontAwesomeIcon icon={faBars} />
       </button>
     </header>
